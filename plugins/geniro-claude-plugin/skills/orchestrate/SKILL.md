@@ -180,14 +180,52 @@ Review the recent changes made by the API and Web agents.
 Please review for correctness, architecture fit, AI-generated code anti-patterns, test quality (especially coverage of architect's test scenarios), and cross-repo consistency.
 ```
 
-**If the reviewer returns "Changes required":**
-1. Read the required changes carefully.
-2. Delegate fixes back to the appropriate agent (api-agent or web-agent), including the reviewer's specific feedback.
-3. After fixes, run the reviewer again to verify.
-4. Repeat until the reviewer approves.
+**Review loop — repeat until fully approved:**
 
-**If the reviewer approves (with or without minor improvements):**
-- Proceed to the summary phase. Minor improvements can be noted as follow-ups.
+This is a strict loop. **Do NOT proceed to Phase 5 until the reviewer returns ✅ Approved.**
+
+1. **Reviewer returns ❌ "Changes required":**
+   - Read every required change carefully.
+   - Group fixes by agent: API issues → `api-agent`, Web issues → `web-agent`.
+   - Delegate fixes to the appropriate agent(s) with the reviewer's exact feedback:
+     ```
+     The reviewer found the following issues that MUST be fixed:
+
+     ## Required Changes
+     [paste the reviewer's numbered required changes for this agent]
+
+     ## Context
+     [brief reminder of the feature and what was implemented]
+
+     Fix ALL required changes listed above. Run `pnpm run full-check` after fixes.
+     ```
+   - After ALL agents complete their fixes, **re-run the reviewer** with:
+     ```
+     Re-review after fixes. This is review round [N].
+
+     ## Previous Review Issues
+     [list of issues from the previous round]
+
+     ## Fixes Applied
+     [summary of what each agent fixed]
+
+     ## Files changed in this round
+     [list of files modified during fixes]
+
+     Verify that ALL previous required changes have been properly addressed.
+     Check that fixes didn't introduce new issues.
+     ```
+   - **Repeat from step 1** if the reviewer still has required changes.
+
+2. **Reviewer returns ✅ "Approved with minor improvements":**
+   - Delegate minor improvements to the appropriate agent(s) — treat them as required.
+   - After fixes, **re-run the reviewer one final time** to confirm.
+   - If the reviewer approves, proceed to Phase 5.
+
+3. **Reviewer returns ✅ "Approved" (no changes):**
+   - Proceed to Phase 5.
+
+**Safety limit:** If the loop runs more than 3 rounds without full approval, stop and present the situation to the user with the outstanding issues. Let the user decide whether to continue iterating or ship as-is.
 
 ### Phase 5: Summary
 

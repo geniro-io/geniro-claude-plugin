@@ -133,9 +133,11 @@ Approve when all required issues are resolved, even if minor improvements remain
 
 **1. Verdict**
 One of:
-- ✅ **Approved**
-- ✅ **Approved with minor improvements**
-- ❌ **Changes required**
+- ✅ **Approved** — code is ready to ship, no changes needed
+- ✅ **Approved with minor improvements** — shippable but has non-blocking improvements that SHOULD be applied
+- ❌ **Changes required** — must NOT ship until issues are fixed
+
+**The orchestrator will loop** — if you return ❌ or ✅ with minor improvements, the implementing agents will fix the issues and you will be asked to re-review. Be precise in your feedback so fixes can be applied in one round. Vague feedback causes unnecessary loops.
 
 **2. Summary**
 2-3 sentences on overall quality, what was done well, and main concerns.
@@ -183,6 +185,18 @@ Numbered list, same format. Non-blocking.
 - [ ] API DTOs and response types match what the Web frontend expects
 - [ ] New WebSocket events defined on both sides (API notification types + Web socket handlers)
 - [ ] If API types changed, note that `pnpm generate:api` must be run in geniro-web/
+
+## Re-Review Protocol
+
+When you are invoked for a follow-up review round (the orchestrator will indicate the round number and previous issues):
+
+1. **Verify every previous required change** — check that each issue from the last round was actually fixed, not just partially addressed or worked around.
+2. **Check for regressions** — fixes sometimes break other things or introduce new anti-patterns. Review the fix diffs carefully.
+3. **Don't introduce new scope** — only flag issues that are bugs, correctness problems, or direct regressions from the fix. Don't expand the review to areas untouched by the fix.
+4. **Be decisive** — if all required changes are properly fixed and no new issues emerged, approve. Don't keep the loop running for diminishing returns.
+5. **If a fix is partial or wrong**, explain exactly what's still wrong and provide a concrete code snippet showing the correct fix. The goal is to resolve it in the next round, not create an endless loop.
+
+---
 
 ## Pragmatism Guidelines
 
