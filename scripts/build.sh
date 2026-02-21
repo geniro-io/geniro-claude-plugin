@@ -6,17 +6,17 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PLUGIN_DIR="$REPO_ROOT/plugins/geniro-claude-plugin"
-PLUGIN_JSON="$PLUGIN_DIR/.claude-plugin/plugin.json"
+MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
 DIST_DIR="$REPO_ROOT/dist"
 
-# Read version from plugin.json
+# Read version from marketplace.json (single source of truth)
 if ! command -v python3 &>/dev/null; then
-  echo "Error: python3 is required to parse plugin.json"
+  echo "Error: python3 is required to parse marketplace.json"
   exit 1
 fi
 
-VERSION=$(python3 -c "import json; print(json.load(open('$PLUGIN_JSON'))['version'])")
-NAME=$(python3 -c "import json; print(json.load(open('$PLUGIN_JSON'))['name'])")
+VERSION=$(python3 -c "import json; print(json.load(open('$MARKETPLACE_JSON'))['plugins'][0]['version'])")
+NAME=$(python3 -c "import json; print(json.load(open('$MARKETPLACE_JSON'))['plugins'][0]['name'])")
 
 echo "Building $NAME v$VERSION..."
 

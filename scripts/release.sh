@@ -35,9 +35,9 @@ echo ""
 # Step 3: Commit, tag, and push
 echo "--- Step 3: Commit, tag, and push ---"
 
-# Read the new version for the commit message
-PLUGIN_JSON="$REPO_ROOT/plugins/geniro-claude-plugin/.claude-plugin/plugin.json"
-NEW_VERSION=$(python3 -c "import json; print(json.load(open('$PLUGIN_JSON'))['version'])")
+# Read the new version from marketplace.json (single source of truth)
+MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
+NEW_VERSION=$(python3 -c "import json; print(json.load(open('$MARKETPLACE_JSON'))['plugins'][0]['version'])")
 
 cd "$REPO_ROOT"
 git add -A

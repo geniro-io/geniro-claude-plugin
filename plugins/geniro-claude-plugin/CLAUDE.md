@@ -5,7 +5,8 @@
 Three scripts in `scripts/` automate versioning, building, and releasing:
 
 ### `./scripts/bump-version.sh [patch|minor|major]`
-Bumps version in both `plugin.json` and `marketplace.json` automatically.
+Bumps version in `marketplace.json` (the single source of truth for versioning).
+Note: `plugin.json` does NOT contain a version field — per Claude docs, relative-path plugins must manage version only via marketplace.json.
 
 ```bash
 ./scripts/bump-version.sh patch   # 1.2.1 → 1.2.2 (bug fixes, wording)
@@ -59,7 +60,7 @@ geniro-claude-plugin/
 ├── .claude-plugin/marketplace.json    # Marketplace catalog (root)
 ├── scripts/                           # Build & release scripts
 │   ├── build.sh                       # Package .zip file
-│   ├── bump-version.sh                # Bump version in both JSONs
+│   ├── bump-version.sh                # Bump version in marketplace.json
 │   └── release.sh                     # Full release pipeline
 ├── dist/                              # Build output (gitignored)
 └── plugins/geniro-claude-plugin/      # The actual plugin
