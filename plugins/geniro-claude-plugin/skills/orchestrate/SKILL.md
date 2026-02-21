@@ -186,7 +186,19 @@ Work in the geniro-web/ directory.
 1. Delegate back to the `architect-agent` to explore the issue and produce a spec revision addendum. The architect does the investigation — you just route the blocker to them.
 2. After revision, re-delegate to the blocked engineer with the updated spec.
 
-**→ After ALL implementing agents complete, immediately proceed to Phase 4.**
+**Completion gate — verify ALL agents finished before proceeding:**
+
+Before moving to Phase 4, confirm that **every** delegated agent has returned and reported its status. For each agent:
+1. **Check the agent returned** — if a Task delegation has not returned yet, wait for it. Never proceed with partial results.
+2. **Check the status** — each agent must report:
+   - Files created/modified
+   - `full-check` result (pass/fail)
+   - Any blockers or deviations from the spec
+3. **If any agent failed `full-check`** — do NOT proceed. Re-delegate to that agent with instructions to fix the failures.
+4. **If any agent reported a blocker** — route it to the architect for investigation before proceeding.
+5. **Only when ALL agents report success** (all `full-check` passes, no unresolved blockers) → proceed to Phase 4.
+
+**→ After ALL implementing agents complete successfully, immediately proceed to Phase 4.**
 
 ### Phase 4: Review (Reviewer Agent)
 
