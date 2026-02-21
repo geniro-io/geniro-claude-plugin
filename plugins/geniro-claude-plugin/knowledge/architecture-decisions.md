@@ -20,6 +20,14 @@ Record of significant architecture decisions made during development. Each entry
 - **Rationale**: SPA already has Keycloak auth in memory. Existing `link` endpoint does all verification. Callback page is thin orchestration.
 - **Consequences**: GitHub App's "Setup URL" must point to frontend origin. Auth survives navigation because Keycloak stores tokens persistently.
 
+### [2026-02-21] Decision: Settings subpages via Refine sidebar nesting
+- **Task**: Settings page needed subpage navigation (Integrations, future sections)
+- **Context**: Initially implemented as inline Menu within the page — user wanted subpages in the app sidebar instead
+- **Decision**: Use Refine's `meta.parent` on resources for automatic sidebar nesting. Parent `Settings` resource has no `list` (pure container). Child `Integrations` has `meta.parent: 'Settings'` and `list: '/settings/integrations'`. Routes use `<Navigate>` for `/settings` → `/settings/integrations` redirect.
+- **Alternatives considered**: (1) Inline Menu within page — rejected by user, wants subpages in app sidebar. (2) Custom sidebar rendering — rejected, Refine handles nesting natively. (3) Ant Design Tabs — rejected, doesn't scale to many settings sections.
+- **Rationale**: Zero custom sidebar code. Adding future subpages = one resource + one route + one component. Refine auto-handles selected state, menu expansion, and collapsed sidebar popups.
+- **Consequences**: `Settings` is not directly navigable (clicking it expands the submenu). Future subpages follow the same pattern.
+
 ### [2026-02-21] Decision: System settings endpoint for feature flags
 - **Task**: Conditionally show/hide GitHub App UI based on server configuration
 - **Context**: Frontend needs to know if GitHub App env vars are set without exposing raw config

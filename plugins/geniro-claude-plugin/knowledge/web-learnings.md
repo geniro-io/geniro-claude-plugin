@@ -26,6 +26,12 @@ Accumulated knowledge about the Geniro Web codebase (`geniro-web/`). Updated aut
 - **Fix/Workaround**: Just use `import axios from 'axios'` directly — no special auth setup needed
 - **Prevention**: Use the global axios instance for authenticated API calls, don't create new instances
 
+### [2026-02-21] Pattern: Refine `meta.parent` for nested sidebar navigation
+- **Context**: Settings page needed subpages (Integrations, future General/Notifications) as nested items in the app sidebar
+- **Pattern**: Parent resource has no `list` (pure submenu container). Child resources use `meta.parent: 'ParentName'`. Refine's `useMenu` → `createTree` auto-renders `Menu.SubMenu` in the sidebar. `defaultOpenKeys` auto-expands when a child is active. No custom sidebar code needed.
+- **Where**: `App.tsx` resources config, `components/layout/CustomSider.tsx` (unchanged — works automatically)
+- **Usage**: Any top-level section that needs expandable sub-navigation in the sidebar
+
 ## Component Patterns
 
 <!-- Reusable UI patterns discovered. Format:
