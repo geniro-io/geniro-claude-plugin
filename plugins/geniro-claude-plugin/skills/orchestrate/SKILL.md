@@ -153,9 +153,10 @@ Work in the geniro/ directory.
 - Follow the architect's step-by-step plan and run each verification step
 - Follow the layered architecture (controller → service → DAO → entity)
 - Use Zod DTOs with createZodDto()
-- Write/update unit tests covering the architect's key test scenarios
+- Write/update unit tests (.spec.ts) covering the architect's key test scenarios
+- **Write integration tests (.int.ts) — MANDATORY for new features.** Place them in `src/__tests__/integration/<feature>/`. Test the complete business workflow through direct service calls: happy path + 2-3 edge/error cases. Follow existing integration test patterns (see `src/__tests__/integration/` for examples). Run each integration test file individually: `pnpm test:integration src/__tests__/integration/<path>.int.ts`
 - Run `pnpm run full-check` in the geniro/ root and fix any errors
-- After completing, report any new patterns, gotchas, or useful commands you discovered
+- After completing, report: files created/modified, full-check result, integration test results (commands run + pass/fail), any new patterns/gotchas discovered
 ```
 
 **Delegation template for Web tasks:**
@@ -174,8 +175,14 @@ Work in the geniro-web/ directory.
 - Use Ant Design components
 - Follow existing component patterns in src/pages/
 - Run `pnpm run full-check` in geniro-web/ and fix any errors
-- **Visually verify your changes with Playwright** — navigate to affected pages, take screenshots, verify layout and interactions work correctly
-- After completing, report any new patterns, gotchas, or useful commands you discovered
+- **Visually verify your changes with Playwright (MANDATORY):**
+  1. Start the dev server if not running: `cd geniro-web && pnpm dev &`
+  2. Navigate to the affected page(s) using `mcp__playwright__browser_navigate`
+  3. Take screenshots with `mcp__playwright__browser_take_screenshot` and verify layout
+  4. Test interactions (clicks, forms, modals) with `mcp__playwright__browser_click` / `mcp__playwright__browser_fill_form`
+  5. If auth is required, attempt to log in via the Keycloak flow. If auth is unavailable, document this clearly but still verify any non-auth-gated pages.
+  6. Report: pages visited, screenshots reviewed, issues found/fixed, or explicit justification if skipped
+- After completing, report: files created/modified, full-check result, Playwright verification result, any new patterns/gotchas discovered
 ```
 
 **Execution rules:**
@@ -194,9 +201,12 @@ Before moving to Phase 4, confirm that **every** delegated agent has returned an
    - Files created/modified
    - `full-check` result (pass/fail)
    - Any blockers or deviations from the spec
-3. **If any agent failed `full-check`** — do NOT proceed. Re-delegate to that agent with instructions to fix the failures.
-4. **If any agent reported a blocker** — route it to the architect for investigation before proceeding.
-5. **Only when ALL agents report success** (all `full-check` passes, no unresolved blockers) → proceed to Phase 4.
+3. **Check testing completeness:**
+   - **API agent**: Must report both unit test results AND integration test results (with specific `pnpm test:integration <file>` commands run). If the agent skipped integration tests for a new feature, re-delegate with explicit instructions to write them.
+   - **Web agent**: Must report Playwright visual verification results (pages visited, screenshots reviewed). If the agent skipped visual verification without valid justification (e.g., "auth not available" is acceptable only if they attempted to log in first), re-delegate with instructions to complete verification.
+4. **If any agent failed `full-check`** — do NOT proceed. Re-delegate to that agent with instructions to fix the failures.
+5. **If any agent reported a blocker** — route it to the architect for investigation before proceeding.
+6. **Only when ALL agents report success** (all `full-check` passes, all required tests written and passing, no unresolved blockers) → proceed to Phase 4.
 
 **→ After ALL implementing agents complete successfully, immediately proceed to Phase 4.**
 

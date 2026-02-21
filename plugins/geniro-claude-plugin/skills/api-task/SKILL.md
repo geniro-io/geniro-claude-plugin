@@ -28,14 +28,25 @@ $ARGUMENTS
 
 ## After Completing
 
-Run the full project check and fix any issues:
-
+### Step 1: Run full-check
 ```bash
 cd geniro && pnpm run full-check
 ```
+Fix any issues and re-run until it passes.
 
-Report back with:
+### Step 2: Write and run integration tests (MANDATORY for new features)
+- Create integration tests (`.int.ts`) in `src/__tests__/integration/<feature>/`
+- Test the complete business workflow through direct service calls: happy path + 2-3 edge/error cases
+- Follow existing patterns in `src/__tests__/integration/` (use `createTestModule` from `setup.ts`)
+- Run each integration test individually:
+```bash
+cd geniro && pnpm test:integration src/__tests__/integration/<feature>/<test>.int.ts
+```
+- **The task is NOT done until integration tests pass.**
+
+### Report back with:
 - Files created/modified
 - Key decisions made
-- Test results
+- Unit test results (`pnpm run full-check` pass/fail + test count)
+- Integration test results (exact command run + pass/fail)
 - Any issues or follow-ups

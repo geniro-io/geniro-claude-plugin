@@ -4,12 +4,26 @@ Record of significant architecture decisions made during development. Each entry
 
 ---
 
-<!-- Entries added by the architect agent. Format:
-### [date] Decision: <title>
-- **Task**: what feature/fix prompted this
-- **Context**: relevant constraints and existing patterns
-- **Decision**: what was decided
-- **Alternatives considered**: what else was evaluated
-- **Rationale**: why this choice was made
-- **Consequences**: what this means for future work
--->
+### [2026-02-21] Decision: GitHubTokenResolverService as token abstraction layer
+- **Task**: GitHub App + PAT dual-auth for git operations
+- **Context**: Tools needed a way to get the right token per-owner (org/user), with GitHub App preferred over PAT
+- **Decision**: Created `GitHubTokenResolverService` that sits between graph resource config and tool invocation. Tools receive a `resolveTokenForOwner(owner)` callback via config.
+- **Alternatives considered**: (1) Store App token on git_repositories entity — rejected (tokens are short-lived). (2) Generic credentials table — overengineering for single provider. (3) Fully lazy resolution — partially adopted, but init script needs a token at startup.
+- **Rationale**: Keeps all existing tool code unchanged. Resolver injected at template layer (natural boundary). Can extend to GitLab/Bitbucket later.
+- **Consequences**: New auth providers follow same pattern. `patToken` field is optional. Users can have both PAT and App tokens.
+
+### [2026-02-21] Decision: Frontend callback page instead of API-side redirect for OAuth
+- **Task**: Auto-link GitHub App installations after user installs the app
+- **Context**: API uses bearer tokens (not session cookies), so API-side redirect wouldn't have auth context
+- **Decision**: GitHub redirects to frontend `/github-app/callback` page, which reads `installation_id` from query params and calls the existing link API
+- **Alternatives considered**: (1) API-side redirect with 302 — would need Fastify reply injection, no auth context. (2) Poll-based detection — fragile, slow UX.
+- **Rationale**: SPA already has Keycloak auth in memory. Existing `link` endpoint does all verification. Callback page is thin orchestration.
+- **Consequences**: GitHub App's "Setup URL" must point to frontend origin. Auth survives navigation because Keycloak stores tokens persistently.
+
+### [2026-02-21] Decision: System settings endpoint for feature flags
+- **Task**: Conditionally show/hide GitHub App UI based on server configuration
+- **Context**: Frontend needs to know if GitHub App env vars are set without exposing raw config
+- **Decision**: `GET /system/settings` returns `{ githubAppEnabled: boolean }`. New `SystemModule` imports feature modules and checks `isConfigured()`.
+- **Alternatives considered**: (1) Add flag to existing endpoint — rejected, feature availability is cross-cutting. (2) Public endpoint — rejected, unnecessary exposure.
+- **Rationale**: Clean home for future feature flags. Authenticated. Frontend caches result via `useSystemSettings` hook.
+- **Consequences**: Future optional features add their flag to `SystemSettingsResponseDto`.

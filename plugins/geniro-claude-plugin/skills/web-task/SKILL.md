@@ -28,14 +28,24 @@ $ARGUMENTS
 
 ## After Completing
 
-Run the full project check and fix any issues:
-
+### Step 1: Run full-check
 ```bash
 cd geniro-web && pnpm run full-check
 ```
+Fix any issues and re-run until it passes.
 
-Report back with:
+### Step 2: Visual verification with Playwright (MANDATORY)
+1. Start the dev server if not running: `cd geniro-web && pnpm dev &`
+2. Navigate to affected pages using `mcp__playwright__browser_navigate`
+3. Take screenshots with `mcp__playwright__browser_take_screenshot` and verify layout
+4. Test interactions (clicks, forms, modals) with Playwright tools
+5. If auth is required, attempt Keycloak login. If auth is unavailable, document this but still verify non-auth-gated pages.
+6. **The task is NOT done until visual verification is complete** (or explicitly skipped with justification after attempting auth).
+
+### Report back with:
 - Files created/modified
 - Key decisions made
+- `full-check` result (pass/fail)
+- **Visual verification result** — pages visited, screenshots reviewed, issues found/fixed (or why skipped)
 - Whether API client regeneration is needed (`pnpm generate:api`)
 - Any issues or follow-ups

@@ -6,13 +6,23 @@ Recurring reviewer feedback. When the same issue appears multiple times, it beco
 
 ## Recurring Issues
 
-<!-- Format:
-### [date] Issue: <name>
-- **Frequency**: how many times this has come up
-- **Description**: what the reviewer flagged
-- **Correct approach**: what should be done instead
-- **Agents affected**: api-agent / web-agent / both
--->
+### [2026-02-21] Issue: Cross-repo API response shape mismatch
+- **Frequency**: 1
+- **Description**: API returned `{ installations: [...] }` but web expected raw array `[...]`. The table received an object instead of array, breaking render.
+- **Correct approach**: Always check the API controller return shape and match it exactly in the frontend types. Wrapped responses (`{ data: [...] }`) vs raw arrays are a common source of bugs.
+- **Agents affected**: both
+
+### [2026-02-21] Issue: Business logic in controllers
+- **Frequency**: 1
+- **Description**: Webhook handler had DB queries and iteration logic directly in the controller method
+- **Correct approach**: Controllers should be thin — extract business logic into service methods. Controller parses input, service handles logic.
+- **Agents affected**: api-agent
+
+### [2026-02-21] Issue: Silent error swallowing in catch blocks
+- **Frequency**: 1
+- **Description**: Empty `catch {}` blocks with only comments hide debugging information
+- **Correct approach**: At minimum add `console.warn()` for non-critical errors so developers can see failures during development
+- **Agents affected**: web-agent
 
 ## Quality Trends
 
