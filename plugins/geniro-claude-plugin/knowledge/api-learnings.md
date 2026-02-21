@@ -18,6 +18,13 @@ Accumulated knowledge about the Geniro API codebase (`geniro/`). Updated automat
 - **Where**: `v1/github-app/services/github-token-resolver.service.ts`, `agent-tools/tools/common/github/gh-base.tool.ts`
 - **Usage**: When adding new auth providers for git operations (e.g., GitLab, Bitbucket)
 
+### [2026-02-21] Pattern: Always use enums for option/type fields
+- **Context**: `authMethod` was initially `'pat' | 'github_app'` string union — user flagged this should be an enum
+- **Rule**: Any field that represents a fixed set of options (auth methods, statuses, modes, kinds) **must** use a TypeScript `enum` with explicit string values, not inline string literals or union types
+- **How**: Create enum in a shared types file (e.g., `<feature>.types.ts`), use `z.nativeEnum(MyEnum)` in Zod schemas, reference `MyEnum.Value` everywhere instead of `'value'`
+- **Naming**: Enum members use PascalCase per project lint rules (e.g., `GithubApp`, not `GITHUB_APP`), string values stay lowercase for serialization
+- **Applies to**: Every new feature with categorical/option fields — auth methods, resource kinds, statuses, modes, strategies
+
 ## Gotchas & Pitfalls
 
 ### [2026-02-21] Gotcha: `getEnv()` without default returns `undefined` at runtime but `string` in TypeScript
