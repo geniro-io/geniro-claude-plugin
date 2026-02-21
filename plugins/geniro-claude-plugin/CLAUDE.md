@@ -1,53 +1,67 @@
 # Geniro Claude Plugin — Development Guidelines
 
-## Version Bumping (MANDATORY)
+## Scripts (use these, don't do it manually)
 
-**After every change to the plugin, you MUST bump the version before committing.**
+Three scripts in `scripts/` automate versioning, building, and releasing:
 
-Version is stored in TWO places — both must be updated:
-
-1. `plugins/geniro-claude-plugin/.claude-plugin/plugin.json` → `"version"` field
-2. `.claude-plugin/marketplace.json` → `plugins[0].version` field
-
-### Versioning Rules
-
-Follow semantic versioning (`MAJOR.MINOR.PATCH`):
-
-- **PATCH** (e.g., 1.2.0 → 1.2.1) — bug fixes, typo corrections, wording improvements, minor clarifications in agent/skill instructions
-- **MINOR** (e.g., 1.2.0 → 1.3.0) — new features, new agents, new skills, significant behavior changes to existing agents/skills, new workflow phases, new sections in agent instructions
-- **MAJOR** (e.g., 1.2.0 → 2.0.0) — breaking changes to the plugin structure, renamed agents/skills, removed functionality, changes that require users to reconfigure
-
-### How to Bump
-
-After making changes, update both files:
+### `./scripts/bump-version.sh [patch|minor|major]`
+Bumps version in both `plugin.json` and `marketplace.json` automatically.
 
 ```bash
-# plugin.json
-# Change: "version": "X.Y.Z" → "version": "X.Y.Z+1"
-
-# marketplace.json
-# Change: "version": "X.Y.Z" → "version": "X.Y.Z+1"
+./scripts/bump-version.sh patch   # 1.2.1 → 1.2.2 (bug fixes, wording)
+./scripts/bump-version.sh minor   # 1.2.1 → 1.3.0 (new features, behavior changes)
+./scripts/bump-version.sh major   # 1.2.1 → 2.0.0 (breaking changes)
 ```
 
-Both versions must always match.
+### `./scripts/build.sh`
+Packages the plugin into a `.zip` file (zip archive) in `dist/` for local upload via Claude Desktop.
 
-### After Every Change
+```bash
+./scripts/build.sh
+# → dist/geniro-claude-plugin-1.3.0.zip
+```
 
-When you finish making changes to the plugin, always:
+### `./scripts/release.sh [patch|minor|major] "commit message"`
+Full release pipeline: bumps version → builds .zip → commits → pushes.
 
-1. **Bump the version** in both `plugin.json` and `marketplace.json` (see rules above)
-2. **Suggest committing and pushing** — remind the user to commit with a descriptive message and push to remote:
-   ```
-   I've updated the plugin to version X.Y.Z. Ready to commit and push:
-   git add -A && git commit -m "feat/fix/refactor: <description>" && git push origin main
-   ```
-3. Never leave uncommitted version bumps — the bump and the changes should go in the same commit.
+```bash
+./scripts/release.sh minor "feat: add Playwright visual verification"
+# Bumps version, builds .zip, commits, pushes to origin/main
+```
+
+## After Every Change (MANDATORY)
+
+When you finish making changes to the plugin, **always run the release script**:
+
+```bash
+./scripts/release.sh [patch|minor|major] "description of changes"
+```
+
+**Version bump rules** (semantic versioning):
+- **patch** — bug fixes, typo corrections, wording improvements, minor clarifications
+- **minor** — new features, new agents/skills, significant behavior changes, new workflow phases, new sections in agent instructions
+- **major** — breaking changes to plugin structure, renamed agents/skills, removed functionality
+
+If the user cannot push from the current environment, run bump + build and suggest the commit command:
+
+```
+I've updated the plugin to version X.Y.Z and built the .zip file.
+Ready to commit and push from your machine:
+  git add -A && git commit -m "feat/fix/refactor: <description> (vX.Y.Z)" && git push origin main
+```
+
+Never leave uncommitted version bumps — the bump and the changes must go in the same commit.
 
 ## Plugin Structure
 
 ```
 geniro-claude-plugin/
 ├── .claude-plugin/marketplace.json    # Marketplace catalog (root)
+├── scripts/                           # Build & release scripts
+│   ├── build.sh                       # Package .zip file
+│   ├── bump-version.sh                # Bump version in both JSONs
+│   └── release.sh                     # Full release pipeline
+├── dist/                              # Build output (gitignored)
 └── plugins/geniro-claude-plugin/      # The actual plugin
     ├── .claude-plugin/plugin.json     # Plugin manifest
     ├── CLAUDE.md                      # This file
