@@ -169,8 +169,12 @@ Work in the geniro-web/ directory.
 ## Knowledge Context
 [paste relevant entries from web-learnings.md, review-feedback.md — only items that apply to this specific task]
 
+## API Changes
+[If the API agent made changes, state: "The API agent modified backend endpoints. You MUST run `pnpm generate:api` before building to get fresh API types." If no API changes: "No backend API changes — skip API client regeneration."]
+
 ## Requirements
 - Follow the architect's step-by-step plan and run each verification step
+- **If backend API changed**: run `pnpm generate:api` BEFORE `full-check` to regenerate API types from the latest OpenAPI spec
 - Use Refine hooks for data operations
 - Use Ant Design components
 - Follow existing component patterns in src/pages/
@@ -182,7 +186,7 @@ Work in the geniro-web/ directory.
   4. Test interactions (clicks, forms, modals) with `mcp__playwright__browser_click` / `mcp__playwright__browser_fill_form`
   5. If auth is required, attempt to log in via the Keycloak flow. If auth is unavailable, document this clearly but still verify any non-auth-gated pages.
   6. Report: pages visited, screenshots reviewed, issues found/fixed, or explicit justification if skipped
-- After completing, report: files created/modified, full-check result, Playwright verification result, any new patterns/gotchas discovered
+- After completing, report: files created/modified, API client regenerated (yes/no), full-check result, Playwright verification result, any new patterns/gotchas discovered
 ```
 
 **Execution rules:**
