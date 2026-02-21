@@ -34,19 +34,18 @@ NEW_VERSION="$MAJOR.$MINOR.$PATCH"
 
 echo "Bumping version: $CURRENT → $NEW_VERSION ($BUMP_TYPE)"
 
-# Update marketplace.json (both metadata.version and plugin entry version)
+# Update marketplace.json (plugin entry version)
 python3 -c "
 import json
 with open('$MARKETPLACE_JSON', 'r') as f:
     data = json.load(f)
-data['metadata']['version'] = '$NEW_VERSION'
 data['plugins'][0]['version'] = '$NEW_VERSION'
 with open('$MARKETPLACE_JSON', 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 "
 
-echo "✓ Updated marketplace.json (metadata + plugin entry) → $NEW_VERSION"
+echo "✓ Updated marketplace.json (plugin entry) → $NEW_VERSION"
 echo ""
 echo "Ready to commit:"
 echo "  git add -A && git commit -m \"chore: bump version to $NEW_VERSION\" && git push origin main"
