@@ -265,14 +265,37 @@ cd geniro/apps/api && pnpm test:e2e:local --spec "cypress/e2e/<path-to-test>.cy.
 
 ## Key Feature Directories
 
+All feature modules live under `apps/api/src/v1/`:
+
+**Core graph system:**
 - `graphs/` — Graph CRUD, compilation, revision, state management
-- `agents/` — Agent node logic
-- `threads/` — Chat threads and messages
-- `notifications/` — WebSocket event emission
-- `runtime/` — Docker runtime management
-- `knowledge/` — Vector storage (Qdrant)
-- `git-repositories/` — Git integration
 - `graph-templates/` — Template definitions
+- `graph-resources/` — Graph resource management (files, assets attached to graphs)
+
+**Agent execution:**
+- `agents/` — Agent node logic
 - `agent-tools/` — Tool execution for agent nodes
 - `agent-triggers/` — Trigger mechanisms
+- `agent-mcp/` — MCP (Model Context Protocol) agent integration
 - `subagents/` — Subagent orchestration
+
+**Communication & real-time:**
+- `threads/` — Chat threads and messages
+- `notifications/` — WebSocket event emission
+- `notification-handlers/` — Notification processing and routing
+
+**Infrastructure & integrations:**
+- `runtime/` — Docker runtime management
+- `knowledge/` — Vector storage integration
+- `qdrant/` — Qdrant vector DB client
+- `litellm/` — LiteLLM proxy for LLM routing
+- `cache/` — Caching layer
+- `git-repositories/` — Git integration
+- `github-app/` — GitHub App OAuth and integration
+
+**System & utilities:**
+- `system/` — System settings and configuration
+- `analytics/` — Usage analytics
+- `ai-suggestions/` — AI-powered suggestions
+- `openai/` — OpenAI-compatible API endpoint
+- `utils/` — Shared utilities

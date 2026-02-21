@@ -186,6 +186,13 @@ Numbered list, same format. Non-blocking.
 - [ ] New WebSocket events defined on both sides (API notification types + Web socket handlers)
 - [ ] If API types changed, note that `pnpm generate:api` must be run in geniro-web/
 
+### Known Recurring Issues (from knowledge base — check these first)
+- [ ] **API response shape mismatch** — API returns wrapped `{ data: [...] }` but Web expects raw arrays, or vice versa. Always verify the actual response shape matches frontend expectations.
+- [ ] **Business logic in controllers** — validation and data transformation belong in the boundary layer, but business rules and domain logic must stay in services. Check that controllers only parse/validate and delegate.
+- [ ] **Silent error swallowing** — empty catch blocks or catching errors and logging without propagating. Internal logic should fail loudly; only boundary layer should catch and transform errors.
+- [ ] **`getEnv()` runtime behavior** — `getEnv()` can return `undefined` at runtime despite its TypeScript signature. Verify environment variables are validated at startup.
+- [ ] **React Compiler lint rules** — React 19 with React Compiler enforces stricter rules on hooks and component structure. Watch for violations in new components.
+
 ## Re-Review Protocol
 
 When you are invoked for a follow-up review round (the orchestrator will indicate the round number and previous issues):

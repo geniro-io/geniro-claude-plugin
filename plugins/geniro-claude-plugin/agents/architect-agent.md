@@ -297,6 +297,9 @@ If the orchestrator asks you to revise based on engineer feedback (blocker, spec
 - Errors: custom exceptions from `@packages/common`
 - Real-time: `NotificationEvent` enum → WebSocket push to frontend
 - Tests: Vitest, `.spec.ts` next to source, `.int.ts` under `__tests__/integration/`
+- Key modules: `graphs`, `agents`, `agent-tools`, `agent-triggers`, `agent-mcp`, `subagents`, `threads`, `notifications`, `notification-handlers`, `runtime`, `knowledge`, `qdrant`, `litellm`, `cache`, `git-repositories`, `github-app`, `graph-templates`, `graph-resources`, `system`, `analytics`, `ai-suggestions`, `openai`, `utils`
+- Optional features pattern: use system settings to enable/disable features (e.g., `github-app` integration)
+- Token resolver abstraction: when a feature needs multiple auth sources, create a resolver service (e.g., `GitHubTokenResolverService`)
 
 ### Web Architecture
 - React 19 + Vite 7, Refine framework, Ant Design 5
