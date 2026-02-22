@@ -43,68 +43,68 @@ Multi-agent orchestrator plugin for the Geniro platform. Provides a full develop
 From the parent directory containing both `geniro/` and `geniro-web/`:
 
 ```bash
-claude plugin add ./geniro-claude-plugin
+claude plugin add ./geniro-claude-marketplace
 ```
 
 ## Available Commands
 
-### `/geniro-claude-plugin:orchestrate [feature description]`
+### `/geniro-claude-marketplace:orchestrate [feature description]`
 
 The main entry point. Runs the full pipeline: load knowledge → architect → user approval → implement → review → deliver → save learnings.
 
 **Example:**
 ```
-/geniro-claude-plugin:orchestrate Add a GraphRevisionProgress WebSocket event that shows per-node rebuild progress during live updates
+/geniro-claude-marketplace:orchestrate Add a GraphRevisionProgress WebSocket event that shows per-node rebuild progress during live updates
 ```
 
-### `/geniro-claude-plugin:plan [task description]`
+### `/geniro-claude-marketplace:plan [task description]`
 
 Run just the architect to produce an implementation-ready specification without executing it.
 
 **Example:**
 ```
-/geniro-claude-plugin:plan Add per-graph concurrency with locks to the revision queue
+/geniro-claude-marketplace:plan Add per-graph concurrency with locks to the revision queue
 ```
 
-### `/geniro-claude-plugin:api-task [task description]`
+### `/geniro-claude-marketplace:api-task [task description]`
 
 Directly run a backend-only task in `geniro/`. Skips architect and reviewer.
 
 **Example:**
 ```
-/geniro-claude-plugin:api-task Add retention pruning to graph-revision.service.ts — delete revisions older than the last 50 per graph
+/geniro-claude-marketplace:api-task Add retention pruning to graph-revision.service.ts — delete revisions older than the last 50 per graph
 ```
 
-### `/geniro-claude-plugin:web-task [task description]`
+### `/geniro-claude-marketplace:web-task [task description]`
 
 Directly run a frontend-only task in `geniro-web/`. Skips architect and reviewer.
 
 **Example:**
 ```
-/geniro-claude-plugin:web-task Add a progress bar to the revision applying toast that shows completedNodes/totalNodes
+/geniro-claude-marketplace:web-task Add a progress bar to the revision applying toast that shows completedNodes/totalNodes
 ```
 
-### `/geniro-claude-plugin:review [what to review]`
+### `/geniro-claude-marketplace:review [what to review]`
 
 Run the reviewer on any changes.
 
 **Examples:**
 ```
-/geniro-claude-plugin:review recent changes to the graph revision service
-/geniro-claude-plugin:review all uncommitted changes
+/geniro-claude-marketplace:review recent changes to the graph revision service
+/geniro-claude-marketplace:review all uncommitted changes
 ```
 
-### `/geniro-claude-plugin:learn [add/view/search/cleanup/stats]`
+### `/geniro-claude-marketplace:learn [add/view/search/cleanup/stats]`
 
 Manage the knowledge base manually. View accumulated learnings, add entries, search, or clean up stale knowledge.
 
 **Examples:**
 ```
-/geniro-claude-plugin:learn view
-/geniro-claude-plugin:learn add TypeORM migrations must be run before integration tests when schema changes
-/geniro-claude-plugin:learn search WebSocket
-/geniro-claude-plugin:learn cleanup
-/geniro-claude-plugin:learn stats
+/geniro-claude-marketplace:learn view
+/geniro-claude-marketplace:learn add TypeORM migrations must be run before integration tests when schema changes
+/geniro-claude-marketplace:learn search WebSocket
+/geniro-claude-marketplace:learn cleanup
+/geniro-claude-marketplace:learn stats
 ```
 
 ## Model Configuration
@@ -120,7 +120,7 @@ Manage the knowledge base manually. View accumulated learnings, add entries, sea
 
 ## Self-Improvement System
 
-The plugin maintains a persistent knowledge base in `geniro-claude-plugin/knowledge/` that grows with every task.
+The plugin maintains a persistent knowledge base in `geniro-claude-marketplace/knowledge/` that grows with every task.
 
 ### How It Works
 
@@ -209,7 +209,7 @@ You describe a feature
 ## Plugin Structure
 
 ```
-geniro-claude-plugin/
+geniro-claude-marketplace/
 ├── .claude-plugin/
 │   └── plugin.json              # Plugin manifest
 ├── agents/

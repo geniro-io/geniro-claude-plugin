@@ -47,6 +47,6 @@ git push origin main
 echo ""
 echo "=== Released v$NEW_VERSION ==="
 echo "  Commit: $COMMIT_MSG (v$NEW_VERSION)"
-echo "  Plugin: dist/geniro-claude-plugin-$NEW_VERSION.zip"
+echo "  Plugin: dist/geniro-claude-marketplace-$NEW_VERSION.zip"
 echo ""
 echo "Upload the .zip file via Claude Desktop → Plugins → Upload local plugin"

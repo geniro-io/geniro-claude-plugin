@@ -16,8 +16,8 @@
       "Bash(git diff *)",
       "Bash(git status*)",
       "Bash(git log *)",
-      "Bash(cat geniro-claude-plugin/knowledge/*)",
-      "Bash(grep * geniro-claude-plugin/knowledge/*)"
+      "Bash(cat geniro-claude-marketplace/knowledge/*)",
+      "Bash(grep * geniro-claude-marketplace/knowledge/*)"
     ]
   }
 }

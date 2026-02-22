@@ -54,20 +54,23 @@ $ARGUMENTS
 
 ### Phase 0: Load Knowledge Base
 
+**Knowledge base path**: `geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/`
+
 **Before anything else**, check whether the knowledge base has real entries:
 
 ```bash
 # Check if any knowledge file has actual entries (lines starting with ### [)
-grep -l "^### \[" geniro-claude-plugin/knowledge/*.md 2>/dev/null
+# Use find to avoid zsh glob expansion errors when no files exist
+find geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge -name "*.md" -exec grep -l "^### \[" {} + 2>/dev/null
 ```
 
 **If entries exist**, read the files that have content:
 
 ```bash
-cat geniro-claude-plugin/knowledge/api-learnings.md
-cat geniro-claude-plugin/knowledge/web-learnings.md
-cat geniro-claude-plugin/knowledge/architecture-decisions.md
-cat geniro-claude-plugin/knowledge/review-feedback.md
+cat geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/api-learnings.md
+cat geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/web-learnings.md
+cat geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/architecture-decisions.md
+cat geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/review-feedback.md
 ```
 
 Scan each file and extract anything relevant to the current task:
@@ -180,10 +183,10 @@ Work in the geniro-web/ directory.
 - Follow existing component patterns in src/pages/
 - Run `pnpm run full-check` in geniro-web/ and fix any errors
 - **Visually verify your changes with Playwright (MANDATORY):**
-  1. Start the dev server if not running: `cd geniro-web && pnpm dev &`
-  2. Navigate to the affected page(s) using `mcp__playwright__browser_navigate`
-  3. Take screenshots with `mcp__playwright__browser_take_screenshot` and verify layout
-  4. Test interactions (clicks, forms, modals) with `mcp__playwright__browser_click` / `mcp__playwright__browser_fill_form`
+  1. Check if the dev server is already running on port 5174 (`lsof -i :5174`). **NEVER start a second instance.** Only start it if nothing is listening: `cd geniro-web && pnpm dev &`
+  2. Navigate to the affected page(s) using Playwright MCP navigate
+  3. Take screenshots with Playwright MCP screenshot and verify layout
+  4. Test interactions (clicks, forms, modals) with Playwright MCP click / fill form
   5. If auth is required, attempt to log in via the Keycloak flow. If auth is unavailable, document this clearly but still verify any non-auth-gated pages.
   6. Report: pages visited, screenshots reviewed, issues found/fixed, or explicit justification if skipped
 - After completing, report: files created/modified, API client regenerated (yes/no), full-check result, Playwright verification result, any new patterns/gotchas discovered
@@ -365,10 +368,10 @@ Review the entire task execution — architect spec, engineer reports, reviewer 
 
 **For each learning**, append it to the appropriate knowledge file using the Edit tool:
 
-- API-specific → `geniro-claude-plugin/knowledge/api-learnings.md`
-- Web-specific → `geniro-claude-plugin/knowledge/web-learnings.md`
-- Architecture decisions → `geniro-claude-plugin/knowledge/architecture-decisions.md`
-- Reviewer patterns → `geniro-claude-plugin/knowledge/review-feedback.md`
+- API-specific → `geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/api-learnings.md`
+- Web-specific → `geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/web-learnings.md`
+- Architecture decisions → `geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/architecture-decisions.md`
+- Reviewer patterns → `geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/review-feedback.md`
 
 **Entry format** (use today's date):
 ```markdown
@@ -379,6 +382,7 @@ Review the entire task execution — architect spec, engineer reports, reviewer 
 ```
 
 **Rules:**
+- **NEVER save sensitive data** — no user data, production tokens, API keys, passwords, secrets, or environment-specific values in knowledge files. These files are committed to the repo and shared. Only save patterns, gotchas, and technical learnings.
 - Only save genuinely useful knowledge — not trivial observations
 - Be specific and actionable — vague entries waste future context
 - If a gotcha already exists in the knowledge base, update its frequency count instead of duplicating

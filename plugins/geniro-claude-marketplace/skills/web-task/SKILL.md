@@ -35,9 +35,9 @@ cd geniro-web && pnpm run full-check
 Fix any issues and re-run until it passes.
 
 ### Step 2: Visual verification with Playwright (MANDATORY)
-1. Start the dev server if not running: `cd geniro-web && pnpm dev &`
-2. Navigate to affected pages using `mcp__playwright__browser_navigate`
-3. Take screenshots with `mcp__playwright__browser_take_screenshot` and verify layout
+1. Check if the dev server is already running on port 5174 (`lsof -i :5174`). **NEVER start a second instance.** Only start it if nothing is listening: `cd geniro-web && pnpm dev &`
+2. Navigate to affected pages using Playwright MCP navigate
+3. Take screenshots with Playwright MCP screenshot and verify layout
 4. Test interactions (clicks, forms, modals) with Playwright tools
 5. If auth is required, attempt Keycloak login. If auth is unavailable, document this but still verify non-auth-gated pages.
 6. **The task is NOT done until visual verification is complete** (or explicitly skipped with justification after attempting auth).

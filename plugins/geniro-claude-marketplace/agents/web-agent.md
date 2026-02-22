@@ -214,43 +214,36 @@ After `full-check` passes, you MUST visually verify your changes using Playwrigh
 
 ### Setup
 
-The dev server should be running. If not, start it:
+The dev server runs on port **5174**. **NEVER start a second instance if it's already running.** Before starting, check if the port is in use:
+
+```bash
+lsof -i :5174
+```
+
+If the port is already occupied, the dev server is running — skip starting it. Only if nothing is listening on 5174, start it:
 
 ```bash
 cd geniro-web && pnpm dev &
 ```
 
-Wait for the dev server to be ready (typically `http://localhost:5173`).
+Wait for the dev server to be ready at `http://localhost:5174`.
 
 ### Verification Steps
 
-Use the `mcp__playwright__` tools to verify your changes:
+Use the **Playwright MCP** tools to verify your changes:
 
-1. **Navigate** to the page(s) affected by your changes:
-   ```
-   mcp__playwright__browser_navigate → URL of the affected page
-   ```
-
-2. **Take a snapshot** to understand the page structure:
-   ```
-   mcp__playwright__browser_snapshot
-   ```
-
-3. **Visually inspect** — take a screenshot and review it:
-   ```
-   mcp__playwright__browser_take_screenshot
-   ```
-
+1. **Navigate** to the page(s) affected by your changes using Playwright MCP navigate.
+2. **Take a snapshot** to understand the page structure using Playwright MCP snapshot.
+3. **Visually inspect** — take a screenshot using Playwright MCP screenshot and review it.
 4. **Verify interactions** — if you changed interactive elements (buttons, forms, dropdowns, modals):
-   - Click the element using `mcp__playwright__browser_click`
+   - Click the element using Playwright MCP click
    - Verify the expected result (modal opens, form submits, state changes)
    - Take another screenshot to confirm
-
 5. **Check edge cases** — if relevant:
    - Empty states (no data)
    - Loading states
    - Error states (disconnect network or mock error)
-   - Responsive behavior (resize browser with `mcp__playwright__browser_resize`)
+   - Responsive behavior (resize browser with Playwright MCP resize)
 
 ### What to Verify
 
@@ -264,8 +257,8 @@ Use the `mcp__playwright__` tools to verify your changes:
 
 If the page requires auth (most Geniro pages do), you may need to:
 1. Navigate to the login page first
-2. Use `mcp__playwright__browser_snapshot` to find the login form
-3. Fill credentials using `mcp__playwright__browser_fill_form` or `mcp__playwright__browser_type`
+2. Use Playwright MCP snapshot to find the login form
+3. Fill credentials using Playwright MCP fill form or type
 4. Complete the auth flow before navigating to the target page
 
 If auth is not available in the dev environment, note this in your report and skip visual verification for auth-gated pages.

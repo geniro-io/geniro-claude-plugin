@@ -13,7 +13,7 @@ argument-hint: "[add/view/search/cleanup] [details]"
 
 # Knowledge Base Manager
 
-You manage the Geniro agents' accumulated knowledge stored in `geniro-claude-plugin/knowledge/`.
+You manage the Geniro agents' accumulated knowledge stored in `geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/`.
 
 ## Knowledge Files
 
@@ -43,7 +43,7 @@ Interactively add a new knowledge entry:
 ### `search <query>`
 Search across all knowledge files for entries matching the query:
 ```bash
-grep -in -B2 -A5 "<query>" geniro-claude-plugin/knowledge/*.md
+find geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge -name "*.md" -exec grep -in -B2 -A5 "<query>" {} +
 ```
 Present results grouped by file. Show the full entry (from `### [` header to the next `###` or end of section) for each match.
 
@@ -66,6 +66,7 @@ Provide analytics on the knowledge base:
 ## Entry Quality Rules
 
 When adding entries:
+- **NEVER save sensitive data** — no user data, production tokens, API keys, passwords, secrets, or environment-specific values. Knowledge files are committed to the repo. Only save patterns, gotchas, and technical learnings.
 - Be specific and actionable — vague entries waste context
 - Include file paths and concrete details
 - Use today's date for timestamping

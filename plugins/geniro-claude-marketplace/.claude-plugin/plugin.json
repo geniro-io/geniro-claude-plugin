@@ -1,5 +1,5 @@
 {
-  "name": "geniro-claude-plugin",
+  "name": "geniro-claude-marketplace",
   "description": "Multi-agent orchestrator for the Geniro platform with self-improving knowledge base. Breaks down feature requests into architecture, implementation, and review phases using specialized agents for API (NestJS) and Web (React) codebases.",
   "author": {
     "name": "Sergey Razumovskij",

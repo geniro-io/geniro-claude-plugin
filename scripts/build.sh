@@ -5,7 +5,7 @@ set -euo pipefail
 # Usage: ./scripts/build.sh
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PLUGIN_DIR="$REPO_ROOT/plugins/geniro-claude-plugin"
+PLUGIN_DIR="$REPO_ROOT/plugins/geniro-claude-marketplace"
 MARKETPLACE_JSON="$REPO_ROOT/.claude-plugin/marketplace.json"
 DIST_DIR="$REPO_ROOT/dist"
 

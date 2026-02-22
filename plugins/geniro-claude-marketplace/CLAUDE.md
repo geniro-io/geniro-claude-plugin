@@ -19,7 +19,7 @@ Packages the plugin into a `.zip` file (zip archive) in `dist/` for local upload
 
 ```bash
 ./scripts/build.sh
-# → dist/geniro-claude-plugin-1.3.0.zip
+# → dist/geniro-claude-marketplace-1.3.0.zip
 ```
 
 ### `./scripts/release.sh [patch|minor|major] "commit message"`
@@ -33,14 +33,14 @@ Full release pipeline: bumps version → builds .zip → commits → pushes.
 ## Plugin Structure
 
 ```
-geniro-claude-plugin/
+geniro-claude-marketplace/
 ├── .claude-plugin/marketplace.json    # Marketplace catalog (root)
 ├── scripts/                           # Build & release scripts
 │   ├── build.sh                       # Package .zip file
 │   ├── bump-version.sh                # Bump version in marketplace.json
 │   └── release.sh                     # Full release pipeline
 ├── dist/                              # Build output (gitignored)
-└── plugins/geniro-claude-plugin/      # The actual plugin
+└── plugins/geniro-claude-marketplace/      # The actual plugin
     ├── .claude-plugin/plugin.json     # Plugin manifest
     ├── CLAUDE.md                      # This file
     ├── agents/                        # Agent definitions (.md)
@@ -57,4 +57,4 @@ geniro-claude-plugin/
 - **Architect** (opus) — explores codebases, produces specs, implements minor improvements directly.
 - **API/Web agents** (opus) — implement code following the architect's spec.
 - **Reviewer** (opus) — reviews code, loops with implementing agents until approved.
-- **Knowledge base** — files in `knowledge/` persist across sessions. Paths in skills reference `geniro-claude-plugin/knowledge/`.
+- **Knowledge base** — files in `knowledge/` persist across sessions. Paths in skills reference `geniro-claude-marketplace/plugins/geniro-claude-marketplace/knowledge/` (relative to the project root CWD).

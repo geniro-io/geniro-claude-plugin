@@ -12,6 +12,14 @@ Record of significant architecture decisions made during development. Each entry
 - **Rationale**: Keeps all existing tool code unchanged. Resolver injected at template layer (natural boundary). Can extend to GitLab/Bitbucket later.
 - **Consequences**: New auth providers follow same pattern. `patToken` field is optional. Users can have both PAT and App tokens.
 
+### [2026-02-22] Decision: Per-command env injection for short-lived tokens (not init script)
+- **Task**: Fix GitHub App auth for shell-based git tools
+- **Context**: GitHub App installation tokens are short-lived (~1hr) and owner-specific. Init script runs once at container start.
+- **Decision**: Inject `GH_TOKEN` as env var per-command via `execGhCommand`, combined with a git credential helper in the init script that reads `GH_TOKEN` at runtime.
+- **Alternatives considered**: (1) Resolve token in init script — rejected (expires, can't serve different owners). (2) URL rewriting per push (`git remote set-url`) — rejected (mutates repo state, token visible in `git remote -v`). (3) Per-command `--config credential.helper` flag — feasible but overly complex.
+- **Rationale**: `GH_TOKEN` is idiomatic for both `gh` CLI and git credential helpers. Per-command injection means fresh tokens per operation. PAT flow (`gh auth login` in init) and App flow (credential helper + `GH_TOKEN`) are mutually exclusive and don't interfere.
+- **Consequences**: All future tools using `execGhCommand` automatically benefit. Third auth method would need careful credential helper separation.
+
 ### [2026-02-21] Decision: Frontend callback page instead of API-side redirect for OAuth
 - **Task**: Auto-link GitHub App installations after user installs the app
 - **Context**: API uses bearer tokens (not session cookies), so API-side redirect wouldn't have auth context

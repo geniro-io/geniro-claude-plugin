@@ -25,6 +25,18 @@ Accumulated knowledge about the Geniro API codebase (`geniro/`). Updated automat
 - **Naming**: Enum members use PascalCase per project lint rules (e.g., `GithubApp`, not `GITHUB_APP`), string values stay lowercase for serialization
 - **Applies to**: Every new feature with categorical/option fields — auth methods, resource kinds, statuses, modes, strategies
 
+### [2026-02-22] Pattern: Per-command GH_TOKEN injection via execGhCommand
+- **Context**: GitHub App tokens are short-lived and owner-specific; can't be set once at init time
+- **Pattern**: `execGhCommand` resolves a token via `resolveToken(config, owner)` and injects it as `GH_TOKEN` env var per-command. Combined with a git credential helper (configured in init script) that reads `GH_TOKEN` at runtime for `git push`.
+- **Where**: `agent-tools/tools/common/github/gh-base.tool.ts`, `graph-resources/services/github-resource.ts`
+- **Usage**: Any new shell-based GitHub tool that needs auth should pass `owner` to `execGhCommand` — token injection happens automatically
+
+### [2026-02-22] Pattern: Extract owner from git remote URL for token resolution
+- **Context**: `gh_push` tool doesn't have `owner` in its schema, but needs it for GitHub App token resolution
+- **Pattern**: Run `git remote get-url <remote>` to get the URL, parse owner with regex matching both HTTPS (`github.com/owner/`) and SSH (`github.com:owner/`) formats. Run in `Promise.all` with other pre-checks to avoid sequential latency.
+- **Where**: `agent-tools/tools/common/github/gh-push.tool.ts`
+- **Usage**: Any tool that operates on a git repo and needs to resolve owner dynamically
+
 ## Gotchas & Pitfalls
 
 ### [2026-02-21] Gotcha: `getEnv()` without default returns `undefined` at runtime but `string` in TypeScript
@@ -32,6 +44,18 @@ Accumulated knowledge about the Geniro API codebase (`geniro/`). Updated automat
 - **Root cause**: The `getEnv(env: string): string` overload signature lies — it can return `undefined`
 - **Fix/Workaround**: Use `Boolean()` checks before consuming the value. Don't chain `.replace()` or `.split()` on values that might be `undefined`
 - **Prevention**: Always guard with `Boolean(val)` or `val || ''` before string operations on optional env vars
+
+### [2026-02-22] Gotcha: `resolveToken` vs `resolveTokenForOwner` — silent failures
+- **What happened**: `resolveToken` in `gh-base.tool.ts` can throw when neither App token nor PAT is available. In `execGhCommand`, this is caught silently so local git ops still work.
+- **Root cause**: The base tool class has no logger — can't log warnings about token resolution failures
+- **Fix/Workaround**: The catch block is intentional. If auth-required commands fail, the runtime error message from `gh`/`git` is clear enough. Future improvement: add a logger to `GhBaseTool`.
+- **Prevention**: When adding new tools, be aware that `execGhCommand` may proceed without `GH_TOKEN` — don't assume auth is always available
+
+### [2026-02-22] Gotcha: `resolveTokenForOwner` only matches exact `accountLogin` — misses cross-account access
+- **What happened**: Clone of `geniro-io/geniro` failed even with GitHub App configured, because the only installation in the DB was for `RazumRu` (personal), not `geniro-io` (org)
+- **Root cause**: `resolveTokenForOwner(owner)` filtered by `accountLogin = owner`. When no exact match, returned null, so no `GH_TOKEN` was set.
+- **Fix**: Added fallback in `resolveTokenForOwner` — if no exact `accountLogin` match, try ANY active installation for the user. GitHub's API enforces actual repo access permissions, so the fallback token either works or fails with a clear 403.
+- **Prevention**: When resolving tokens by owner, always have a fallback strategy. Don't assume 1:1 mapping between installation `accountLogin` and repo owner.
 
 ### [2026-02-21] Gotcha: `DefaultLogger` uses `log()` not `info()`
 - **What happened**: Called `this.logger.info()` which doesn't exist

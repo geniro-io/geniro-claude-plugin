@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "geniro-claude-plugin",
+  "name": "geniro-claude-marketplace",
   "description": "Geniro platform plugin marketplace",
   "owner": {
     "name": "Sergey Razumovskij",
@@ -8,14 +8,14 @@
   },
   "plugins": [
     {
-      "name": "geniro-claude-plugin",
+      "name": "geniro-claude-marketplace",
       "description": "Multi-agent orchestrator for the Geniro platform with self-improving knowledge base. Breaks down feature requests into architecture, implementation, and review phases using specialized agents for API (NestJS) and Web (React) codebases.",
-      "version": "1.6.4",
+      "version": "1.6.5",
       "author": {
         "name": "Sergey Razumovskij",
         "email": "s.razumru@gmail.com"
       },
-      "source": "./plugins/geniro-claude-plugin",
+      "source": "./plugins/geniro-claude-marketplace",
       "category": "development"
     }
   ]
