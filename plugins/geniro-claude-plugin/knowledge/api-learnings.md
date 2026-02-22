@@ -83,3 +83,18 @@ Accumulated knowledge about the Geniro API codebase (`geniro/`). Updated automat
 - **For**: Testing code that uses Zod schemas with default values
 - **Approach**: When constructing config objects inline (not via `.parse()`), the TypeScript output type makes defaulted fields required. Use `authMethod: 'pat' as const` in test objects.
 - **Example file**: `v1/graph-templates/templates/resources/github-resource.template.spec.ts`
+
+### [2026-02-22] Pattern: Eliminating unnecessary forwardRef in NestJS modules
+- **Context**: Refactored all `forwardRef` and `ModuleRef` usage across the codebase
+- **Detail**: Many `forwardRef(() => SomeModule)` imports exist from earlier code but are no longer needed. Check if Module A actually DI-injects providers from Module B at the NestJS level (not just TypeScript type imports). If only types/static methods/`new` are used, the module import is unnecessary. `ModuleRef.resolve(X, ..., { strict: false })` works globally without needing the provider's module imported.
+- **Applies to**: Any module cleanup or circular dependency investigation
+
+### [2026-02-22] Pattern: Replace ModuleRef.create() with constructor injection for singletons
+- **Context**: Notification handlers used `moduleRef.create(ThreadsService)` to get a service instance per call
+- **Detail**: `ModuleRef.create()` instantiates a new instance each invocation — wasteful for singletons. If the service has no request-scoped dependencies in its constructor chain, use direct constructor injection instead. The module already imports the provider's module, so DI works.
+- **Applies to**: Any handler or service using `moduleRef.create()` or `moduleRef.resolve()` for singleton-scoped providers
+
+### [2026-02-22] Gotcha: Unused constructor injections accumulate silently
+- **Context**: Found 7 unused `private readonly` injections across the codebase during refactoring audit
+- **Detail**: TypeScript/NestJS don't warn about injected-but-unused constructor params. These add unnecessary DI overhead and confuse readers about actual dependencies. Common after refactoring methods out of a service.
+- **Prevention**: After removing method calls from a service, check if the injected dependency is still used. Grep for `this.<paramName>` in the class body.

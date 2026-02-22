@@ -206,11 +206,22 @@ cd geniro && pnpm run full-check
 ```
 This builds the project, compiles tests, runs linting + auto-fix, and runs unit tests. **If this fails, fix the issues and re-run until it passes.**
 
-### Step 2: Run relevant integration tests
-If you wrote or modified integration tests, run each specific file:
-```bash
-cd geniro && pnpm test:integration src/__tests__/integration/<path-to-test>.int.ts
-```
+### Step 2: Discover and run ALL related integration tests
+Run integration tests for **every feature area you touched** — not just the tests you wrote or modified.
+
+1. **Discover related test files** — search `src/__tests__/integration/` for tests that cover the modified feature modules:
+   ```bash
+   # Find integration test files in feature subdirectories matching your changes
+   find src/__tests__/integration/ -name "*.int.ts" | grep -i "<feature>"
+   # Also grep for imports of the services/DAOs/entities you changed
+   grep -rl "YourChangedService\|YourChangedDao" src/__tests__/integration/
+   ```
+2. **Check coverage** — if the feature you implemented has no integration tests, or existing tests don't cover your new/changed behavior, **create or update integration tests** (mandatory for new features).
+3. **Run each related test file individually** — never the full suite:
+   ```bash
+   cd geniro && pnpm test:integration src/__tests__/integration/<feature>/<test>.int.ts
+   ```
+4. **Fix any failures** before proceeding — the task is NOT done until all related integration tests pass.
 
 ### Step 3: Run relevant E2E tests (if applicable)
 If you added or modified endpoints with E2E coverage:
@@ -250,6 +261,7 @@ cd geniro/apps/api && pnpm test:e2e:local --spec "cypress/e2e/<path-to-test>.cy.
    - Key decisions and assumptions
    - Any deviations from the spec and why
    - Test results (exact commands run, pass/fail counts for each)
+   - **Integration tests**: list ALL related test files discovered, which were run, which were created/updated, and pass/fail results for each
    - Any remaining concerns or follow-ups
    - **Learnings discovered** — new patterns, gotchas, useful commands, or surprising behaviors found during this task (the orchestrator will save these to the knowledge base)
 

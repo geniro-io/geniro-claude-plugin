@@ -24,6 +24,12 @@ Recurring reviewer feedback. When the same issue appears multiple times, it beco
 - **Correct approach**: At minimum add `console.warn()` or `logger.debug()` for non-critical errors so developers can see failures during development. If no logger is available, document why the catch is intentionally silent.
 - **Agents affected**: both
 
+### [2026-02-22] Issue: Unused constructor injections in services
+- **Frequency**: 1 (7 instances found in single audit)
+- **Description**: Services had `private readonly` constructor params that were never referenced as `this.<param>` anywhere in the class. Found in controllers, services, templates, and handlers.
+- **Correct approach**: After any refactoring that removes method calls, verify all constructor injections are still used. Remove unused ones along with their import statements and spec mocks.
+- **Agents affected**: api-agent
+
 ## Quality Trends
 
 <!-- High-level observations about code quality over time. Format:

@@ -167,6 +167,7 @@ Numbered list, same format. Non-blocking.
 - [ ] Error handling uses custom exceptions from `@packages/common`
 - [ ] Unit tests (`.spec.ts`) exist next to source files
 - [ ] Tests verify real behavior, not just mocks
+- [ ] **Integration tests** (`.int.ts`) exist for the feature in `src/__tests__/integration/` — cover happy path + edge cases. Verify the agent ran ALL related integration tests (not just newly written ones).
 - [ ] No bare `pnpm test` or `pnpm test:integration` (always scoped)
 - [ ] No conditional test skips
 - [ ] `pnpm run full-check` passes in `geniro/`
