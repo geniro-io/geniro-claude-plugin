@@ -19,9 +19,9 @@ Recurring reviewer feedback. When the same issue appears multiple times, it beco
 - **Agents affected**: api-agent
 
 ### [2026-02-21] Issue: Silent error swallowing in catch blocks
-- **Frequency**: 2 (updated 2026-02-22)
-- **Description**: Empty `catch {}` blocks with only comments hide debugging information. Also flagged in `execGhCommand` token resolution catch block (api-agent).
-- **Correct approach**: At minimum add `console.warn()` or `logger.debug()` for non-critical errors so developers can see failures during development. If no logger is available, document why the catch is intentionally silent.
+- **Frequency**: 3 (updated 2026-02-23)
+- **Description**: Empty `catch {}` blocks with only comments hide debugging information. Also flagged in `execGhCommand` token resolution (api-agent) and `GraphRevisionNotificationHandler.handle()` which returned `[]` on any error with a generic message, causing WebSocket notifications to silently drop.
+- **Correct approach**: At minimum add `console.warn()` or `logger.debug()` for non-critical errors. Include context (event type, entity ID) in error messages. If no logger is available, document why the catch is intentionally silent.
 - **Agents affected**: both
 
 ### [2026-02-22] Issue: Unused constructor injections in services

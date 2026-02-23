@@ -32,6 +32,25 @@ Accumulated knowledge about the Geniro Web codebase (`geniro-web/`). Updated aut
 - **Where**: `App.tsx` resources config, `components/layout/CustomSider.tsx` (unchanged — works automatically)
 - **Usage**: Any top-level section that needs expandable sub-navigation in the sidebar
 
+### [2026-02-23] Gotcha: useEffect handler instability causes missed WebSocket events
+- **What happened**: WebSocket revision events were never received despite correct backend emission
+- **Root cause**: `useWebSocket` hook's `useEffect` depended on `handlers` — a new object every render. This caused constant handler teardown/setup, creating windows where events were missed.
+- **Fix**: Use `useRef` forwarding pattern: store handlers in a ref, create stable wrapper functions that delegate to `handlersRef.current`. Depend on `JSON.stringify(Object.keys(handlers))` instead of `handlers`.
+- **Where**: `hooks/useWebSocket.ts`
+- **Prevention**: Never depend on object/function references in effects that register external listeners. Always use ref forwarding.
+
+### [2026-02-23] Pattern: Status rank guard for monotonic state transitions
+- **Context**: HTTP response could overwrite WebSocket-delivered terminal status (Applied → Pending)
+- **Pattern**: Define a `STATUS_RANK` map with numeric values. In `upsertRevision`, only update if `incomingRank >= existingRank`. Terminal states (Applied, Failed) share the highest rank.
+- **Where**: `pages/graphs/hooks/useGraphRevisions.tsx`
+- **Applies to**: Any client-side state that can be updated from multiple sources (WebSocket + HTTP)
+
+### [2026-02-23] Pattern: Polling fallback with graph state refresh
+- **Context**: Polling fallback detected revision completion but didn't update `graph.version`, causing VERSION_CONFLICT on next save
+- **Pattern**: Add an `onRevisionComplete` callback to the polling hook. The caller defines a refresh function that fetches latest graph data and rebuilds state. Use a ref for the callback to avoid interval restarts.
+- **Where**: `pages/graphs/hooks/useGraphRevisions.tsx`, `pages/graphs/details.tsx`
+- **Applies to**: Any polling fallback that detects state changes — must refresh ALL dependent state, not just the polled entity
+
 ## Component Patterns
 
 <!-- Reusable UI patterns discovered. Format:

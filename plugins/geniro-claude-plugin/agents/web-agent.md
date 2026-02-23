@@ -208,9 +208,11 @@ This builds the project (catches TypeScript errors) and runs linting with auto-f
 
 ---
 
-## Visual Verification with Playwright (MANDATORY)
+## Visual Verification with Playwright (MANDATORY — NO EXCEPTIONS)
 
-After `full-check` passes, you MUST visually verify your changes using Playwright browser automation. This catches UI issues that builds and lints miss — broken layouts, invisible elements, wrong colors, missing interactions.
+After `full-check` passes, you MUST visually verify your changes using Playwright browser automation. This catches issues that builds and lints miss — broken layouts, race conditions, state management bugs, missing interactions.
+
+**IMPORTANT: You must ALWAYS verify with Playwright, even for "logic-only" or "non-visual" changes.** Logic bugs (race conditions, state management, WebSocket handling) are only caught by testing the actual UI flow. "No visual changes" or "logic-only change" is NOT a valid reason to skip Playwright verification. If Playwright MCP tools are not available in your session, report this clearly so the orchestrator can perform verification instead — do NOT silently skip.
 
 ### Setup
 
@@ -228,6 +230,27 @@ cd geniro-web && pnpm dev &
 
 Wait for the dev server to be ready at `http://localhost:5174`.
 
+### Authentication
+
+Log in with the dedicated Playwright test account. **NEVER use the primary user account (`s.razumru`) for automated testing.**
+
+- **Username**: `claude-test`
+- **Password**: `claude-test-2026`
+
+Steps:
+1. Navigate to `http://localhost:5174` — it will redirect to Keycloak
+2. Use Playwright MCP fill form to enter credentials
+3. Click "Sign In"
+4. Wait for the app to load
+
+### Data Safety — NEVER Modify Existing Entities
+
+**NEVER modify, delete, or interact with existing graphs/entities for testing.** Always:
+1. **Create NEW test entities** (e.g., click "New Graph") for your testing
+2. Test your changes on the new test entities
+3. **Delete ALL test entities** when verification is complete
+4. Leave the app in the same state it was before your testing
+
 ### Verification Steps
 
 Use the **Playwright MCP** tools to verify your changes:
@@ -239,7 +262,11 @@ Use the **Playwright MCP** tools to verify your changes:
    - Click the element using Playwright MCP click
    - Verify the expected result (modal opens, form submits, state changes)
    - Take another screenshot to confirm
-5. **Check edge cases** — if relevant:
+5. **Test the actual behavior** — for logic changes (state management, WebSocket, data flow):
+   - Trigger the action that exercises your change (e.g., save a graph, create a thread)
+   - Wait and observe the result (e.g., status badge updates, data appears)
+   - Verify the expected outcome happened WITHOUT a page reload
+6. **Check edge cases** — if relevant:
    - Empty states (no data)
    - Loading states
    - Error states (disconnect network or mock error)
@@ -251,27 +278,19 @@ Use the **Playwright MCP** tools to verify your changes:
 - **Content**: Correct text, labels, icons, and data displayed
 - **Interactions**: Buttons clickable, forms submittable, dropdowns open, modals appear
 - **State changes**: UI updates correctly after user actions
+- **Real-time behavior**: WebSocket events, polling, and live updates work correctly
 - **No regressions**: Existing features on the same page still work
-
-### Authentication
-
-If the page requires auth (most Geniro pages do), you may need to:
-1. Navigate to the login page first
-2. Use Playwright MCP snapshot to find the login form
-3. Fill credentials using Playwright MCP fill form or type
-4. Complete the auth flow before navigating to the target page
-
-If auth is not available in the dev environment, note this in your report and skip visual verification for auth-gated pages.
 
 ### Reporting
 
 Include a **"Visual Verification"** section in your completion report:
 - Pages visited and verified
 - Screenshots taken (describe what was checked)
+- Interactions tested and results observed
 - Any visual issues found and fixed
-- If verification was skipped, explain why (e.g., auth not available, page requires specific data)
+- If Playwright MCP tools were not available, state this explicitly
 
-**The task is NOT done until both `full-check` passes AND visual verification is complete** (or explicitly skipped with justification).
+**The task is NOT done until both `full-check` passes AND visual verification is complete.** If Playwright tools are unavailable, report this so the orchestrator handles verification.
 
 ---
 
@@ -300,6 +319,7 @@ Include a **"Visual Verification"** section in your completion report:
 - If you create temporary artifacts (scratch files, debug logs), remove them before finishing.
 - Only intentional, task-relevant changes should remain when you report completion.
 - Clean up large debug outputs. Never leave sensitive data in logs or temporary files.
+- **Shut down any servers you started.** If you started the dev server (`pnpm dev`) or any other background process during your task, you MUST stop it before finishing. Use `kill` with the PID or `lsof -ti :5174 | xargs kill` to stop the dev server. Never leave background processes running after your task is complete.
 
 ---
 

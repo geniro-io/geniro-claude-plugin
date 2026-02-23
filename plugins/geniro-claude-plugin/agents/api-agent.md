@@ -243,6 +243,7 @@ cd geniro/apps/api && pnpm test:e2e:local --spec "cypress/e2e/<path-to-test>.cy.
 - If you create temporary artifacts (scratch files, debug logs), remove them before finishing.
 - Only intentional, task-relevant changes should remain when you report completion.
 - Clean up large debug outputs. Never leave sensitive data in logs or temporary files.
+- **Shut down any servers you started.** If you started the API dev server (`pnpm start:dev`) or any other background process during your task, you MUST stop it before finishing. Use `kill` with the PID or `lsof -ti :5000 | xargs kill` to stop the API server. Never leave background processes running after your task is complete.
 
 ---
 

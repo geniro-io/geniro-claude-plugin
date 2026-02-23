@@ -116,3 +116,31 @@ Accumulated knowledge about the Geniro API codebase (`geniro/`). Updated automat
 - **Context**: Found 7 unused `private readonly` injections across the codebase during refactoring audit
 - **Detail**: TypeScript/NestJS don't warn about injected-but-unused constructor params. These add unnecessary DI overhead and confuse readers about actual dependencies. Common after refactoring methods out of a service.
 - **Prevention**: After removing method calls from a service, check if the injected dependency is still used. Grep for `this.<paramName>` in the class body.
+
+### [2026-02-23] Gotcha: Docker runtime containers are lazy-started, not during graph.run()
+- **Context**: Resources integration test timed out because `beforeAll` included a warmup that started Docker
+- **Detail**: `graph.run()` only compiles the graph and registers nodes. Docker containers start lazily when the first thread triggers `runtimeProvider.provide()`. Any "warmup" that starts Docker must happen as a trigger execution, not during graph setup. Keep `beforeAll` lightweight (module + graph creation only) and let the test itself handle Docker cold-start within its own timeout.
+- **Applies to**: Any integration test that uses Docker runtimes
+
+### [2026-02-23] Gotcha: Suppressing init script output hides failures
+- **Context**: Docker runtime init script used `>/dev/null 2>&1`, causing "Init failed:" with no diagnostic info
+- **Detail**: `docker-runtime.ts` `runInitScript` reports `"Init failed: ${res.stderr || res.stdout}"`. If both are suppressed, the error is just "Init failed:" with zero context.
+- **Prevention**: Never suppress stdout/stderr in test init scripts. Remove `>/dev/null 2>&1` redirects during testing.
+- **Applies to**: Writing or debugging Docker runtime init scripts in integration tests
+
+### [2026-02-23] Pattern: Use pre-built Docker images + binary downloads in integration tests
+- **Context**: `python:3.11-slim` + 7-step `apt-get` gh install took 60-90s; switched to `node:20` + `curl | tar` (~3s)
+- **Detail**: For integration tests needing CLI tools, use a Docker image with prerequisites pre-installed (`node:20` has `curl`, `git`, `tar`) and download binaries directly from GitHub releases. Avoids apt repo setup overhead entirely. Test time dropped from ~130s to ~23s.
+- **Applies to**: Any integration test that installs tools inside Docker containers
+
+### [2026-02-23] Gotcha: Notification emissions inside uncommitted transactions silently fail
+- **What happened**: WebSocket revision notifications never arrived at the frontend despite correct wiring
+- **Root cause**: `notificationsService.emit()` was called inside `typeorm.trx()`. The enrichment handler queries the DB outside the transaction, gets null/stale results, and silently returns `[]` — dropping the notification.
+- **Fix**: Move `notificationsService.emit()` calls to AFTER `typeorm.trx()` returns (transaction committed). Return post-commit data from the transaction callback so the caller can emit outside.
+- **Prevention**: Never emit notifications inside `typeorm.trx()`. If a method is called from inside a transaction, return data and let the outermost caller emit after commit.
+
+### [2026-02-23] Pattern: Post-commit notification emission via return values
+- **Context**: `queueRevision()` is called both standalone and from within outer transactions (`graphs.service.ts update()`)
+- **Pattern**: When no outer `entityManager` is provided, `queueRevision` owns its transaction and emits after commit. When an outer `entityManager` is passed, it returns post-commit data and the caller emits after their outer transaction commits. Use structured return values (`{ response, postCommit }`) to flow data out of transactions.
+- **Where**: `graph-revision.service.ts`, `graphs.service.ts`
+- **Applies to**: Any notification emission that might be nested inside transactions

@@ -58,6 +58,14 @@ Record of significant architecture decisions made during development. Each entry
 - **Decision**: Remove `EnrichedNotificationEvent`, use `NotificationEvent` everywhere. Zero wire-format change.
 - **Consequences**: One enum to maintain. New event types only need one addition. The mapping switch statement in `graph-revision-notification-handler` was eliminated.
 
+### [2026-02-23] Decision: Post-commit notification emission pattern
+- **Task**: Fix WebSocket revision notifications silently dropping
+- **Context**: Notifications emitted inside `typeorm.trx()` caused enrichment handlers to query uncommitted data, silently failing
+- **Decision**: Move all `notificationsService.emit()` calls outside transactions. Return post-commit data from transaction callbacks. Dual behavior in `queueRevision`: standalone emits itself, nested returns data for caller to emit.
+- **Alternatives considered**: (1) TypeORM `afterTransactionCommit` hooks — rejected (unreliable in TypeORM 0.3). (2) Transactional outbox pattern — overengineering for ephemeral notifications. (3) Queue notifications in controller — adds latency, BullMQ workers aren't controllers.
+- **Rationale**: Simplest fix preserving existing architecture. Enrichment handlers can read committed data. Transaction failures don't affect notifications. Polling fallback handles the crash-between-commit-and-emit edge case.
+- **Consequences**: Notification data must be captured inside and passed out of transactions. Methods called from both standalone and nested contexts need dual behavior.
+
 ### [2026-02-21] Decision: System settings endpoint for feature flags
 - **Task**: Conditionally show/hide GitHub App UI based on server configuration
 - **Context**: Frontend needs to know if GitHub App env vars are set without exposing raw config

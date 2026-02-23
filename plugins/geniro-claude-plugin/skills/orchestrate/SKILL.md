@@ -159,6 +159,7 @@ Work in the geniro/ directory.
 - Write/update unit tests (.spec.ts) covering the architect's key test scenarios
 - **Write integration tests (.int.ts) — MANDATORY for new features.** Place them in `src/__tests__/integration/<feature>/`. Test the complete business workflow through direct service calls: happy path + 2-3 edge/error cases. Follow existing integration test patterns (see `src/__tests__/integration/` for examples). Run each integration test file individually: `pnpm test:integration src/__tests__/integration/<path>.int.ts`
 - Run `pnpm run full-check` in the geniro/ root and fix any errors
+- **Shut down any servers you started** (e.g., `pnpm start:dev`). Use `lsof -ti :5000 | xargs kill` before reporting completion. Never leave background processes running.
 - After completing, report: files created/modified, full-check result, integration test results (commands run + pass/fail), any new patterns/gotchas discovered
 ```
 
@@ -182,13 +183,17 @@ Work in the geniro-web/ directory.
 - Use Ant Design components
 - Follow existing component patterns in src/pages/
 - Run `pnpm run full-check` in geniro-web/ and fix any errors
-- **Visually verify your changes with Playwright (MANDATORY):**
+- **Visually verify your changes with Playwright (MANDATORY — NO EXCEPTIONS):**
+  You MUST ALWAYS verify with Playwright, even for "logic-only" or "non-visual" changes. Logic bugs (race conditions, state management, WebSocket handling) are only caught by testing the actual UI flow. "No visual changes" is NOT a valid reason to skip.
   1. Check if the dev server is already running on port 5174 (`lsof -i :5174`). **NEVER start a second instance.** Only start it if nothing is listening: `cd geniro-web && pnpm dev &`
   2. Navigate to the affected page(s) using Playwright MCP navigate
-  3. Take screenshots with Playwright MCP screenshot and verify layout
-  4. Test interactions (clicks, forms, modals) with Playwright MCP click / fill form
-  5. If auth is required, attempt to log in via the Keycloak flow. If auth is unavailable, document this clearly but still verify any non-auth-gated pages.
-  6. Report: pages visited, screenshots reviewed, issues found/fixed, or explicit justification if skipped
+  3. Log in with the dedicated Playwright test account: username `claude-test`, password `claude-test-2026`. **NEVER use the primary user account (`s.razumru`) for automated testing.**
+  4. **NEVER modify existing graphs/entities for testing.** Always create NEW test entities (e.g., click "New Graph"), test your changes on them, and DELETE the test entities when done.
+  5. Take screenshots with Playwright MCP screenshot and verify layout
+  6. Test interactions (clicks, forms, modals) with Playwright MCP click / fill form
+  7. Report: pages visited, screenshots reviewed, issues found/fixed
+  If Playwright MCP tools are not available in the agent session, report this clearly — the orchestrator will perform visual verification instead. Do NOT silently skip.
+- **Shut down any servers you started** (e.g., `pnpm dev`). Use `lsof -ti :5174 | xargs kill` before reporting completion. Never leave background processes running.
 - After completing, report: files created/modified, API client regenerated (yes/no), full-check result, Playwright verification result, any new patterns/gotchas discovered
 ```
 
@@ -210,7 +215,7 @@ Before moving to Phase 4, confirm that **every** delegated agent has returned an
    - Any blockers or deviations from the spec
 3. **Check testing completeness:**
    - **API agent**: Must report both unit test results AND integration test results (with specific `pnpm test:integration <file>` commands run). If the agent skipped integration tests for a new feature, re-delegate with explicit instructions to write them.
-   - **Web agent**: Must report Playwright visual verification results (pages visited, screenshots reviewed). If the agent skipped visual verification without valid justification (e.g., "auth not available" is acceptable only if they attempted to log in first), re-delegate with instructions to complete verification.
+   - **Web agent**: Must report Playwright visual verification results (pages visited, screenshots reviewed, interactions tested). **"Logic-only change" or "no visual changes" is NOT a valid justification for skipping Playwright.** The only acceptable reason to skip is if Playwright MCP tools were not available in the agent's session — in that case, YOU (the orchestrator) must perform the Playwright verification yourself before proceeding. If the agent skipped without this reason, re-delegate with instructions to complete verification.
 4. **If any agent failed `full-check`** — do NOT proceed. Re-delegate to that agent with instructions to fix the failures.
 5. **If any agent reported a blocker** — route it to the architect for investigation before proceeding.
 6. **Only when ALL agents report success** (all `full-check` passes, all required tests written and passing, no unresolved blockers) → proceed to Phase 4.
@@ -438,6 +443,7 @@ Review the entire task execution — architect spec, engineer reports, reviewer 
 
 - **You are a router, not an explorer.** If you're tempted to read source code or run searches to understand something, delegate to the architect instead. The only files you read directly are knowledge base files (Phase 0/7).
 - **Do not stop between phases.** After each agent returns, immediately proceed to the next phase. The only phases where you wait for user input are Phase 2 (approval) and Phase 5 (feedback).
+- **Shut down servers after work is complete.** If you or any agent started the API server (`port 5000`) or Web dev server (`port 5174`) during the task, shut them down in Phase 6 before the final report. Use `lsof -ti :5000 | xargs kill` and `lsof -ti :5174 | xargs kill`. Never leave background processes running after the orchestration completes.
 - If the task only affects ONE side (API-only or Web-only), delegate to just that agent. Don't force full-stack changes when they're not needed.
 - **Small/trivial tasks** (typo fix, single-line config change) can skip the architect phase. Use your judgment — if the change is obvious and self-contained, delegate directly to the implementing agent.
 - If the REVISION_PLAN.md is relevant to the task, pass it to the architect — don't read it yourself.
