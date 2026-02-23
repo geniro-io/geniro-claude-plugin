@@ -17,7 +17,8 @@
       "Bash(git status*)",
       "Bash(git log *)",
       "Bash(cat geniro-claude-marketplace/plugins/geniro-claude-plugin/knowledge/*)",
-      "Bash(grep * geniro-claude-marketplace/plugins/geniro-claude-plugin/knowledge/*)"
+      "Bash(grep * geniro-claude-marketplace/plugins/geniro-claude-plugin/knowledge/*)",
+      "Bash(*pnpm audit*)"
     ]
   }
 }

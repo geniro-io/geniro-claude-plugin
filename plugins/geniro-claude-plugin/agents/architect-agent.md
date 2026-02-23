@@ -163,7 +163,9 @@ When the task involves unfamiliar libraries, APIs, protocols, or design patterns
 
 6. **Define key test scenarios** — specify concrete test cases with expected behaviors. At minimum: one happy-path, 2–3 edge/error cases.
 
-7. **Produce the specification** — structured, implementation-ready, no ambiguity.
+7. **Organize into execution waves** — group implementation steps into waves based on dependencies. Steps within the same wave can run in parallel. Steps in later waves depend on earlier ones. Explicitly mark cross-repo dependencies (e.g., "Web needs API types from Step X before starting Step Y").
+
+8. **Produce the specification** — structured, implementation-ready, no ambiguity.
 
 ---
 
@@ -227,7 +229,28 @@ Separate plans for API and Web (when both are affected). Each step includes:
 
 Order steps so dependencies are respected. Mark which steps can run in parallel.
 
-### 7. Key Test Scenarios
+### 7. Execution Plan (Waves & Dependencies)
+
+Organize the implementation steps into parallelizable waves. This helps the orchestrator know which agents can run concurrently.
+
+**Wave 1** (no dependencies — can start immediately):
+- Step N: [description] — `api-agent`
+- Step M: [description] — `web-agent` (if independent of API)
+
+**Wave 2** (depends on Wave 1):
+- Step P: [description] — `web-agent`
+  - **Depends on**: Step N (needs API types/endpoint from Wave 1)
+  - **Blocker type**: Hard (cannot start without dependency) | Soft (can start early, needs dependency for testing)
+
+**Cross-repo dependencies** (explicitly list):
+- Web → API: [specific types, endpoints, or events Web needs from API]
+- API → Web: [rarely needed, but note if applicable]
+
+**Critical path**: The longest sequential chain of dependent steps.
+
+For small tasks (1–2 steps, single agent), this section can be a single sentence: "Single wave — all steps are sequential within one agent."
+
+### 8. Key Test Scenarios
 
 For each scenario specify:
 - **Scenario name**: descriptive one-liner
@@ -237,7 +260,7 @@ For each scenario specify:
 
 Minimum: 1 happy-path, 2–3 edge/error cases per agent.
 
-### 8. Explored Files
+### 9. Explored Files
 List every file explored during research with:
 - Full path
 - Line ranges inspected
@@ -245,7 +268,7 @@ List every file explored during research with:
 
 This is critical — engineers use this to skip redundant reads, saving significant context.
 
-### 9. Repository Commands
+### 10. Repository Commands
 Exact build/test/lint commands for each repo:
 
 **API (geniro/):**
@@ -257,7 +280,7 @@ Exact build/test/lint commands for each repo:
 - `pnpm run full-check` — builds and lints
 - `pnpm generate:api` — regenerate API client after backend changes
 
-### 10. Architecture Decision Record
+### 11. Architecture Decision Record
 If this task involves a significant design choice (new pattern, technology decision, structural change), document it:
 - **Decision**: what was decided
 - **Alternatives**: what else was considered
@@ -266,7 +289,7 @@ If this task involves a significant design choice (new pattern, technology decis
 
 (The orchestrator will save this to `knowledge/architecture-decisions.md`.)
 
-### 11. Assumptions, Risks & Rollback
+### 12. Assumptions, Risks & Rollback
 - **Assumptions**: explicit assumptions, open questions, follow-ups
 - **Failure modes**: what could go wrong at runtime and expected system behavior
 - **Rollback plan**: how to undo the change

@@ -8,7 +8,7 @@ allowed-tools:
   - Glob
   - Grep
   - Bash
-argument-hint: "[add/view/search/cleanup] [details]"
+argument-hint: "[add/view/search/cleanup/validate/stats] [details]"
 ---
 
 # Knowledge Base Manager
@@ -49,11 +49,31 @@ Present results grouped by file. Show the full entry (from `### [` header to the
 
 ### `cleanup`
 Review all knowledge files and:
-1. Remove entries that are no longer accurate (check against current codebase)
-2. Merge duplicate or overlapping entries
-3. Update frequency counts on recurring issues
-4. Archive entries older than 6 months that haven't been referenced
-5. Report what was cleaned up
+1. **Run validation first** — execute the same checks as `validate report` to identify stale, duplicate, and generic entries
+2. Remove entries that are no longer accurate (check against current codebase)
+3. Merge duplicate or overlapping entries
+4. Update frequency counts on recurring issues
+5. Archive entries older than 6 months that haven't been referenced
+6. Remove generic framework knowledge that belongs in documentation, not project learnings
+7. Report what was cleaned up
+
+### `validate [fix|report]`
+Run a health check on the knowledge base. Detects:
+- **Stale references**: entries pointing to files or functions that no longer exist in the codebase
+- **Duplicates**: substantially similar entries across different files
+- **Generic knowledge**: framework basics that belong in documentation, not project learnings (e.g., "NestJS modules need to import providers")
+- **Stale frequency counts**: review-feedback entries with frequency: 1 older than 60 days
+
+**Workflow:**
+1. Read all 4 knowledge files
+2. For each entry with a file path reference, verify the file exists (Glob) and any referenced function/class exists (Grep)
+3. Compare entries across files for duplicates or misplaced entries
+4. Flag entries that describe generic framework behavior vs. Geniro-specific knowledge
+5. Check frequency counts in `review-feedback.md` for staleness
+
+**Modes:**
+- `report` (default) — dry-run, show issues without modifying files
+- `fix` — apply recommended removals, merges, and path updates using the Edit tool. Do NOT remove stale frequency entries — only flag them for manual review.
 
 ### `stats`
 Provide analytics on the knowledge base:

@@ -115,7 +115,75 @@ Additional context:
 
 **If the spec has gaps** — if you notice missing areas or the spec doesn't cover all aspects of the request, ask the architect for a revision addendum before proceeding.
 
-**→ Immediately proceed to Phase 2.**
+**→ Immediately proceed to Phase 1b.**
+
+### Phase 1b: Spec Validation Gate (Skeptic + Completeness Validator)
+
+**After the architect delivers the spec**, run two validators in parallel before presenting to the user.
+
+**Delegate both simultaneously using Task:**
+
+1. **Skeptic validation** — delegate to `skeptic-agent`:
+   ```
+   Validate the following architect specification against the actual codebase:
+
+   ## Architect Specification
+   [paste the FULL spec from the architect]
+
+   Verify all file paths, function references, import paths, and pattern claims.
+   Produce a Skeptic Validation Report.
+   ```
+
+2. **Completeness validation** — delegate to `completeness-validator-agent`:
+   ```
+   Validate the following architect specification against the original requirements:
+
+   ## Original Task Description
+   [paste the original feature request / $ARGUMENTS]
+
+   ## Architect Specification
+   [paste the FULL spec from the architect]
+
+   ## Knowledge Context
+   [paste any relevant architecture decisions from Phase 0 — past decisions may explain design choices]
+
+   Check bidirectional traceability. Every requirement must map to spec steps and tests.
+   Produce a Completeness Validation Report.
+   ```
+
+**Processing results:**
+
+- **If skeptic finds MIRAGES**: Do NOT present the spec to the user. Delegate back to `architect-agent` with the skeptic report:
+  ```
+  The skeptic found factual errors in your specification that must be fixed:
+
+  ## Skeptic Report
+  [paste the full report]
+
+  Produce a revision addendum addressing each mirage. Verify the corrected references are real.
+  ```
+  Then re-run the skeptic on the revised spec. Max 2 validation rounds.
+
+- **If completeness validator finds DROPPED requirements**: Delegate back to `architect-agent` with the completeness report:
+  ```
+  The completeness validator found coverage gaps:
+
+  ## Completeness Report
+  [paste the full report]
+
+  Either add spec coverage for dropped requirements or explicitly justify their exclusion.
+  ```
+
+- **If both pass** (no mirages, no dropped requirements): Proceed to Phase 2. Include a one-line validation summary when presenting to the user:
+  ```
+  Spec validated: N claims verified, 0 mirages. All M requirements covered.
+  ```
+
+- **SCOPE CREEP or YAGNI findings** (non-blocking): Include them in the Phase 2 presentation so the user can decide whether to trim scope.
+
+- **If validation fails after 2 rounds**: Present the outstanding issues to the user along with the spec. Let the user decide whether to proceed anyway or request further revision.
+
+**→ After validation passes (or user overrides), immediately proceed to Phase 2.**
 
 ### Phase 2: User Approval
 
@@ -222,12 +290,13 @@ Before moving to Phase 4, confirm that **every** delegated agent has returned an
 
 **→ After ALL implementing agents complete successfully, immediately proceed to Phase 4.**
 
-### Phase 4: Review (Reviewer Agent)
+### Phase 4: Review (Reviewer + Security Auditor + Test Reviewer)
 
-After all implementing agents complete, **delegate to the `reviewer-agent`** to catch problems before they ship.
+After all implementing agents complete, **run three review agents in parallel** to catch problems before they ship.
 
-Pass the reviewer a clear summary of what was implemented, along with the architect's spec for reference:
+**Delegate all three simultaneously using Task:**
 
+**1. Code Reviewer** — delegate to `reviewer-agent`:
 ```
 Review the recent changes made by the API and Web agents.
 
@@ -243,18 +312,65 @@ Review the recent changes made by the API and Web agents.
 ## Files changed (Web)
 - [list of changed files in geniro-web/]
 
+## Knowledge Context
+[paste relevant entries from review-feedback.md — recurring issues to check for]
+
 ## Task requirements
 - [original acceptance criteria]
 
 ## Key test scenarios to verify
 - [list from architect's spec]
 
-Please review for correctness, architecture fit, AI-generated code anti-patterns, test quality (especially coverage of architect's test scenarios), and cross-repo consistency.
+Please review for correctness, architecture fit, AI-generated code anti-patterns, test quality, and cross-repo consistency.
 ```
+
+**2. Security Auditor** — delegate to `security-auditor-agent`:
+```
+Perform a security audit on the recent implementation changes.
+
+## What was implemented
+- [summary of the feature/fix]
+
+## Files changed (API)
+- [list of changed files in geniro/]
+
+## Files changed (Web)
+- [list of changed files in geniro-web/]
+
+Audit for OWASP Top 10 issues. Focus on: injection risks in new queries, auth decorators on new endpoints, input validation on new DTOs, XSS in new React components, sensitive data in logs/responses.
+```
+
+**3. Test Reviewer** — delegate to `test-reviewer-agent`:
+```
+Evaluate test quality for the recent implementation.
+
+## Architect's Key Test Scenarios
+[paste the test scenarios from the architect's spec]
+
+## Files changed (API)
+- [list of changed test files and source files in geniro/]
+
+## Files changed (Web)
+- [list of changed test files and source files in geniro-web/]
+
+Run the litmus test on every new test. Check assertion quality. Verify all architect test scenarios are covered. Check test pyramid balance.
+```
+
+**Processing combined results:**
+
+After all three agents return, merge their findings:
+
+1. **Reviewer's required changes** → always blocking
+2. **Security findings CRITICAL/HIGH** → blocking (must fix before shipping)
+3. **Security findings MEDIUM/LOW** → non-blocking (present as minor improvements)
+4. **Test reviewer ILLUSORY/MISSING** → blocking (tests must actually test something)
+5. **Test reviewer WEAK/STYLE** → non-blocking (present as minor improvements)
+
+Combine all blocking findings into a single list for the implementing agents. Deduplicate overlapping findings (e.g., reviewer and security auditor both flagging the same missing auth).
 
 **Review loop — repeat until fully approved:**
 
-This is a strict loop. **Do NOT proceed to Phase 5 until the reviewer returns ✅ Approved.**
+This is a strict loop. **Do NOT proceed to Phase 4b until the reviewer returns ✅ Approved AND no blocking security/test issues remain.**
 
 1. **Reviewer returns ❌ "Changes required":**
    - Read every required change carefully.
@@ -314,9 +430,11 @@ This is a strict loop. **Do NOT proceed to Phase 5 until the reviewer returns �
 3. **Reviewer returns ✅ "Approved" (no changes):**
    - Proceed to Phase 5.
 
+**Re-running specialized reviewers:** After fixes, always re-run the `reviewer-agent`. Only re-run `security-auditor-agent` if fixes involved security-related changes (auth, input validation, queries). Only re-run `test-reviewer-agent` if fixes involved test changes. This avoids unnecessary re-runs while ensuring relevant issues are verified.
+
 **Safety limit:** If the loop runs more than 3 rounds without full approval, stop and present the situation to the user with the outstanding issues. Let the user decide whether to continue iterating or ship as-is.
 
-**→ After reviewer fully approves, immediately proceed to Phase 4b.**
+**→ After reviewer fully approves AND no blocking security/test issues remain, immediately proceed to Phase 4b.**
 
 ### Phase 4b: Integration Test Gate
 
@@ -410,7 +528,9 @@ Review the entire task execution — architect spec, engineer reports, reviewer 
 2. **Gotchas** — things that went wrong, were surprising, or wasted time
 3. **Architecture decisions** — significant choices made during this task
 4. **Review feedback patterns** — issues the reviewer flagged (especially if they seem likely to recur)
-5. **Useful commands** — non-obvious CLI commands or workflows that helped
+5. **Security findings** — if the security auditor found real issues, record the pattern in `review-feedback.md` with the security category
+6. **Mirage patterns** — if the skeptic found mirages that required spec revision, record what the architect got wrong and why (e.g., function renamed in recent refactor, file moved) so future specs avoid the same mistake
+7. **Useful commands** — non-obvious CLI commands or workflows that helped
 
 **For each learning**, append it to the appropriate knowledge file using the Edit tool:
 

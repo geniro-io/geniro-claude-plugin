@@ -50,11 +50,25 @@ Actively check for these — they are the most common problems in AI-written cod
 - **Dead code / half-refactored structures** — leftover unused code, mixed old/new patterns.
 - **Test illusion** — tests that pass but don't assert real behavior or only cover trivial cases.
 
-## Knowledge Integration
+## Knowledge Integration — Mandatory Checklist Verification
 
 If the orchestrator included a "Knowledge Context" section with past review feedback patterns:
-- Check whether any of the previously flagged recurring issues appear in this implementation.
-- If you find an issue that matches a known recurring pattern, **escalate it** in your review — reference the pattern and note that this is a repeat occurrence.
+
+1. **Read every entry** in the knowledge context.
+2. **For each known recurring issue**, actively search the current implementation for that pattern:
+   - "API response shape mismatch" → check controller return types match frontend expectations
+   - "Business logic in controllers" → verify controllers only parse/validate/delegate
+   - "Silent error swallowing" → search for empty `catch {}` blocks in changed files
+   - "Unused constructor injections" → check that all `private readonly` params are referenced
+   - "Dead code from alternative designs" → search for exported-but-unused functions
+3. **If you find a match**, escalate it as a **Required Change** with the note: "Known recurring issue (Nth occurrence) — see review-feedback.md"
+4. **Report checklist results** in your review output under a "Knowledge Checklist" section:
+   ```
+   ### Knowledge Checklist
+   - [x] API response shape mismatch — checked, no issues
+   - [x] Business logic in controllers — checked, no issues
+   - [ ] Silent error swallowing — FOUND in `graph-revision.dao.ts:45` (see Required Change #2)
+   ```
 
 In your review output, include a **6. Learnings** section at the end (after Verification) if you noticed anything worth saving. Use this format:
 
@@ -193,6 +207,17 @@ Numbered list, same format. Non-blocking.
 - [ ] **Silent error swallowing** — empty catch blocks or catching errors and logging without propagating. Internal logic should fail loudly; only boundary layer should catch and transform errors.
 - [ ] **`getEnv()` runtime behavior** — `getEnv()` can return `undefined` at runtime despite its TypeScript signature. Verify environment variables are validated at startup.
 - [ ] **React Compiler lint rules** — React 19 with React Compiler enforces stricter rules on hooks and component structure. Watch for violations in new components.
+
+### Security Checklist (check on every review)
+- [ ] New endpoints have `@OnlyForAuthorized()` decorator (or explicit justification for public access)
+- [ ] New DTOs have Zod validation for ALL user-controlled fields (no raw `req.body` access)
+- [ ] No raw SQL string interpolation — all queries use parameterized bindings
+- [ ] No `child_process.exec()` with user-controlled arguments without sanitization
+- [ ] No secrets, tokens, or API keys hardcoded in source code
+- [ ] Error responses don't leak internal details (stack traces, SQL errors, internal paths)
+- [ ] WebSocket event handlers validate incoming payloads before processing
+- [ ] New React components don't use `dangerouslySetInnerHTML` with user-controlled data
+- [ ] Log statements don't include sensitive user data (passwords, tokens, PII)
 
 ## Re-Review Protocol
 

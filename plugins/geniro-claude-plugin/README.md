@@ -1,41 +1,41 @@
 # Geniro Claude Plugin
 
-Multi-agent orchestrator plugin for the Geniro platform. Provides a full development pipeline with **self-improving knowledge**: architect designs the plan, engineers implement it, reviewer catches problems, and the system learns from every task.
+Multi-agent orchestrator plugin for the Geniro platform. Provides a full development pipeline with **self-improving knowledge**: architect designs the plan, validators verify it, engineers implement, reviewers + security auditor + test reviewer catch problems, and the system learns from every task.
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                    /orchestrate                           │
-│                (Pipeline Controller)                      │
-│                                                          │
-│  0. Load knowledge base (past learnings)                 │
-│  1. Architect analyzes & designs spec                    │
-│  2. User reviews & approves the plan                     │
-│  3. Engineers implement (API + Web in parallel)           │
-│  4. Reviewer checks quality before shipping              │
-│  5. Fix loop if needed, then deliver summary             │
-│  6. Extract & save learnings to knowledge base           │
-└───┬──────────┬──────────────┬──────────┬─────────────────┘
-    │          │              │          │
-┌───▼────┐ ┌──▼───────┐ ┌────▼─────┐ ┌──▼───────────┐
-│architect│ │ api-agent │ │web-agent │ │reviewer-agent│
-│ (opus) │ │  (opus)   │ │  (opus)  │ │   (opus)     │
-│        │ │           │ │          │ │              │
-│ Explore│ │ NestJS    │ │ React    │ │ Code review  │
-│ Design │ │ TypeORM   │ │ AntDesign│ │ AI patterns  │
-│ Plan   │ │ Vitest    │ │ Refine   │ │ Architecture │
-│ Specify│ │ geniro/   │ │geniro-web│ │ Test quality │
-└────────┘ └───────────┘ └──────────┘ └──────────────┘
-                    │
-              ┌─────▼─────┐
-              │ knowledge/ │  Persistent learnings
-              │            │  fed back into every
-              │ Patterns   │  future task
-              │ Gotchas    │
-              │ Decisions  │
-              │ Feedback   │
-              └────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         /orchestrate                                 │
+│                     (Pipeline Controller)                            │
+│                                                                     │
+│  0. Load knowledge base (past learnings)                            │
+│  1. Architect analyzes & designs spec with execution waves          │
+│  1b. Skeptic + Completeness Validator verify spec (parallel)        │
+│  2. User reviews & approves the plan                                │
+│  3. Engineers implement (API + Web, following waves)                 │
+│  4. Reviewer + Security Auditor + Test Reviewer (parallel)          │
+│  4b. Integration test gate                                          │
+│  5. User feedback loop                                              │
+│  6. Final verification & summary                                    │
+│  7. Extract & save learnings to knowledge base                      │
+└──┬─────┬──────┬──────┬──────┬──────┬──────┬──────┬─────────────────┘
+   │     │      │      │      │      │      │      │
+┌──▼──┐┌─▼───┐┌─▼───┐┌─▼───┐┌─▼───┐┌─▼───┐┌─▼───┐┌─▼──────┐
+│archi││ api ││ web ││revie││skept││secur││compl││test    │
+│tect ││agent││agent││wer  ││ic   ││ity  ││ete- ││revie- │
+│     ││     ││     ││     ││     ││audit││ness ││wer    │
+│opus ││opus ││opus ││opus ││opus ││opus ││opus ││opus   │
+└─────┘└─────┘└─────┘└─────┘└─────┘└─────┘└─────┘└───────┘
+                  │
+            ┌─────▼─────┐
+            │ knowledge/ │  Persistent learnings
+            │            │  fed back into every
+            │ Patterns   │  future task
+            │ Gotchas    │
+            │ Decisions  │
+            │ Feedback   │
+            └────────────┘
 ```
 
 ## Installation
@@ -50,7 +50,7 @@ claude plugin add ./geniro-claude-marketplace
 
 ### `/geniro-claude-plugin:orchestrate [feature description]`
 
-The main entry point. Runs the full pipeline: load knowledge → architect → user approval → implement → review → deliver → save learnings.
+The main entry point. Runs the full pipeline: load knowledge → architect → validate spec → user approval → implement → review (3 agents) → integration tests → deliver → save learnings.
 
 **Example:**
 ```
@@ -64,6 +64,15 @@ Run just the architect to produce an implementation-ready specification without 
 **Example:**
 ```
 /geniro-claude-plugin:plan Add per-graph concurrency with locks to the revision queue
+```
+
+### `/geniro-claude-plugin:spec [feature description]`
+
+Conduct a structured requirements interview before architecture. Three rounds: general understanding → code-informed questions → edge cases. Produces a clear requirements spec.
+
+**Example:**
+```
+/geniro-claude-plugin:spec Add a graph template marketplace where users can share and import graph configurations
 ```
 
 ### `/geniro-claude-plugin:api-task [task description]`
@@ -94,9 +103,27 @@ Run the reviewer on any changes.
 /geniro-claude-plugin:review all uncommitted changes
 ```
 
-### `/geniro-claude-plugin:learn [add/view/search/cleanup/stats]`
+### `/geniro-claude-plugin:skeptic [spec to validate]`
 
-Manage the knowledge base manually. View accumulated learnings, add entries, search, or clean up stale knowledge.
+Validate an architect specification against the actual codebase. Detects mirages: references to nonexistent files, functions, or patterns.
+
+**Example:**
+```
+/geniro-claude-plugin:skeptic [paste architect spec here]
+```
+
+### `/geniro-claude-plugin:security-audit [what to audit]`
+
+Run an OWASP Top 10 focused security audit on recent code changes.
+
+**Example:**
+```
+/geniro-claude-plugin:security-audit recent changes to the auth module
+```
+
+### `/geniro-claude-plugin:learn [add/view/search/cleanup/validate/stats]`
+
+Manage the knowledge base manually. View accumulated learnings, add entries, search, clean up stale knowledge, validate health, or get stats.
 
 **Examples:**
 ```
@@ -104,7 +131,18 @@ Manage the knowledge base manually. View accumulated learnings, add entries, sea
 /geniro-claude-plugin:learn add TypeORM migrations must be run before integration tests when schema changes
 /geniro-claude-plugin:learn search WebSocket
 /geniro-claude-plugin:learn cleanup
+/geniro-claude-plugin:learn validate report
 /geniro-claude-plugin:learn stats
+```
+
+### `/geniro-claude-plugin:validate-knowledge [fix|report]`
+
+Run a dedicated knowledge base health check: detect stale references, duplicates, and generic framework knowledge.
+
+**Examples:**
+```
+/geniro-claude-plugin:validate-knowledge report
+/geniro-claude-plugin:validate-knowledge fix
 ```
 
 ## Model Configuration
@@ -116,7 +154,12 @@ Manage the knowledge base manually. View accumulated learnings, add entries, sea
 | API Agent | Opus | Complex implementation with strict quality bar |
 | Web Agent | Opus | Complex implementation with strict quality bar |
 | Reviewer | Opus | Thorough code review requires deep understanding |
+| Skeptic | Opus | Verifying spec claims against codebase requires precision |
+| Security Auditor | Opus | OWASP analysis requires deep security understanding |
+| Completeness Validator | Opus | Requirements traceability requires analytical reasoning |
+| Test Reviewer | Opus | Test quality evaluation requires understanding intent vs. assertion |
 | Learn Manager | Sonnet | Knowledge CRUD — straightforward operations |
+| Knowledge Validator | Sonnet | File existence checks — straightforward operations |
 
 ## Self-Improvement System
 
@@ -126,15 +169,17 @@ The plugin maintains a persistent knowledge base in `geniro-claude-marketplace/p
 
 1. **Before each task** (Phase 0) — the orchestrator reads all knowledge files and extracts entries relevant to the current task
 2. **During delegation** — relevant knowledge is passed to agents as "Knowledge Context" so they can avoid known pitfalls and follow proven patterns
-3. **After each task** (Phase 6) — the orchestrator reviews the full execution (architect spec, engineer reports, reviewer feedback) and extracts new learnings
+3. **After each task** (Phase 7) — the orchestrator reviews the full execution (architect spec, engineer reports, reviewer feedback, security findings, mirage patterns) and extracts new learnings
 4. **Agents contribute** — engineers and reviewer report discoveries in their output, which the orchestrator saves
+5. **Health checks** — the `/validate-knowledge` command detects stale references, duplicates, and generic framework knowledge
 
 ### What Gets Captured
 
 - **Patterns** — reusable approaches for specific feature areas (API and Web separately)
 - **Gotchas** — things that went wrong, with root cause and prevention
 - **Architecture decisions** — significant design choices with context and rationale
-- **Review feedback** — recurring issues with frequency tracking
+- **Review feedback** — recurring issues with frequency tracking (including security findings)
+- **Mirage patterns** — what the architect got wrong in specs and why (for future accuracy)
 - **Useful commands** — non-obvious CLI workflows
 - **Test patterns** — effective testing approaches for specific scenarios
 - **Component patterns** — reusable UI patterns (Web)
@@ -146,16 +191,20 @@ The plugin maintains a persistent knowledge base in `geniro-claude-marketplace/p
 | `api-learnings.md` | API patterns, gotchas, test patterns, commands |
 | `web-learnings.md` | Web patterns, gotchas, component patterns, commands |
 | `architecture-decisions.md` | Design choices with rationale and consequences |
-| `review-feedback.md` | Recurring reviewer findings, quality trends |
+| `review-feedback.md` | Recurring reviewer findings, security patterns, quality trends |
 
 ## Agents
 
 | Agent | Role | Works In | Specialization |
 |-------|------|----------|---------------|
-| `architect-agent` | Design | Both repos | Codebase analysis, implementation specs, risk assessment, test scenarios |
+| `architect-agent` | Design | Both repos | Codebase analysis, implementation specs with execution waves, risk assessment, test scenarios |
 | `api-agent` | Implement | `geniro/` | NestJS services, TypeORM entities, Zod DTOs, Vitest tests, migrations |
 | `web-agent` | Implement | `geniro-web/` | React components, Refine hooks, Ant Design UI, Socket.io events |
-| `reviewer-agent` | Quality gate | Both repos | Code review, AI-pattern detection, architecture fit, test quality |
+| `reviewer-agent` | Quality gate | Both repos | Code review, AI-pattern detection, security checklist, architecture fit, test quality |
+| `skeptic-agent` | Spec validation | Both repos | Mirage detection — verifies spec references against actual codebase |
+| `security-auditor-agent` | Security review | Both repos | OWASP Top 10 audit adapted for NestJS + React stack |
+| `completeness-validator-agent` | Requirements check | N/A (reads spec) | Bidirectional traceability — requirements ↔ spec ↔ tests |
+| `test-reviewer-agent` | Test quality | Both repos | Litmus test, assertion quality, pyramid balance, scenario coverage |
 
 ## Full Pipeline Flow
 
@@ -170,38 +219,55 @@ You describe a feature
          ▼
 ┌─────────────────┐
 │  1. ARCHITECT    │  Explores both codebases, designs minimal changes,
-│                  │  produces file-level spec with test scenarios.
-│                  │  References past architecture decisions.
+│                  │  produces file-level spec with execution waves
+│                  │  and test scenarios.
 └────────┬────────┘
          ▼
 ┌─────────────────┐
-│  2. USER REVIEW  │  You see the plan: scope, risk, files, approach.
-│                  │  Approve, request changes, or reject.
+│ 1b. VALIDATE     │  Skeptic + Completeness Validator run in parallel.
+│     SPEC         │  Skeptic catches mirages (nonexistent references).
+│                  │  Completeness catches dropped requirements.
+│                  │  Failures → back to architect for revision.
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  2. USER REVIEW  │  You see the plan: scope, risk, files, approach,
+│                  │  validation results. Approve or request changes.
 └────────┬────────┘
          ▼
 ┌─────────────────┐
 │  3. IMPLEMENT    │  api-agent + web-agent work from the spec.
-│                  │  Receive relevant knowledge context.
+│                  │  Follow execution waves for parallelism.
 │                  │  Each runs pnpm run full-check before reporting.
-│                  │  Report new learnings discovered during work.
 └────────┬────────┘
          ▼
 ┌─────────────────┐
-│  4. REVIEW       │  reviewer-agent checks all changes against spec,
-│                  │  coding standards, and AI anti-pattern checklist.
-│                  │  Flags recurring issues from past feedback.
-│                  │  ❌ Changes required → fix loop back to step 3
-│                  │  ✅ Approved → proceed
+│  4. REVIEW       │  Three agents run in parallel:
+│                  │  - reviewer-agent (code quality, architecture)
+│                  │  - security-auditor-agent (OWASP Top 10)
+│                  │  - test-reviewer-agent (test quality)
+│                  │  Blocking issues → fix loop back to step 3
+│                  │  All clear → proceed
 └────────┬────────┘
          ▼
 ┌─────────────────┐
-│  5. DELIVER      │  Final build verification, summary report with
+│ 4b. INT TESTS    │  Discover + run all related integration tests.
+│                  │  Write missing tests if needed.
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  5. FEEDBACK     │  Present results to user. Iterate on changes
+│                  │  until satisfied.
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  6. SUMMARY      │  Final build verification, summary report with
 │                  │  files changed, decisions, manual steps, risks.
 └────────┬────────┘
          ▼
 ┌─────────────────┐
-│  6. LEARN        │  Extract patterns, gotchas, decisions, and
-│                  │  feedback from the entire execution. Save to
+│  7. LEARN        │  Extract patterns, gotchas, decisions, security
+│                  │  findings, and mirage patterns. Save to
 │                  │  knowledge base for future tasks.
 └─────────────────┘
 ```
@@ -216,9 +282,13 @@ geniro-claude-marketplace/
 │   ├── architect-agent.md       # Architect: analyze & design specs
 │   ├── api-agent.md             # Engineer: API backend
 │   ├── web-agent.md             # Engineer: Web frontend
-│   └── reviewer-agent.md        # Reviewer: quality gate
+│   ├── reviewer-agent.md        # Reviewer: quality gate
+│   ├── skeptic-agent.md         # Skeptic: spec validation
+│   ├── security-auditor-agent.md # Security: OWASP Top 10 audit
+│   ├── completeness-validator-agent.md # Completeness: requirements traceability
+│   └── test-reviewer-agent.md   # Test reviewer: test quality evaluation
 ├── hooks/
-│   └── hooks.json               # Lifecycle hooks (empty — agents self-enforce)
+│   └── hooks.json               # Lifecycle hooks
 ├── knowledge/                   # Persistent self-improvement knowledge base
 │   ├── api-learnings.md         # API patterns, gotchas, commands
 │   ├── web-learnings.md         # Web patterns, gotchas, components
@@ -229,14 +299,36 @@ geniro-claude-marketplace/
 │   │   └── SKILL.md             # Full pipeline command
 │   ├── plan/
 │   │   └── SKILL.md             # Architect-only command
+│   ├── spec/
+│   │   └── SKILL.md             # Requirements interview
 │   ├── api-task/
 │   │   └── SKILL.md             # Direct API task command
 │   ├── web-task/
 │   │   └── SKILL.md             # Direct Web task command
 │   ├── review/
 │   │   └── SKILL.md             # Direct review command
-│   └── learn/
-│       └── SKILL.md             # Knowledge base management
+│   ├── skeptic/
+│   │   └── SKILL.md             # Standalone spec validation
+│   ├── security-audit/
+│   │   └── SKILL.md             # Standalone security audit
+│   ├── learn/
+│   │   └── SKILL.md             # Knowledge base management
+│   └── validate-knowledge/
+│       └── SKILL.md             # Knowledge base health check
 ├── settings.json                # Default permissions
 └── README.md
 ```
+
+## Recommended: Secret Scanning
+
+For additional security, install [gitleaks](https://github.com/gitleaks/gitleaks) and add it as a pre-commit hook in your Geniro repositories:
+
+```bash
+# Install gitleaks
+brew install gitleaks
+
+# Run manually before committing
+gitleaks detect --source . --verbose
+```
+
+This catches accidentally committed secrets, tokens, and API keys before they reach the repo.

@@ -144,3 +144,9 @@ Accumulated knowledge about the Geniro API codebase (`geniro/`). Updated automat
 - **Pattern**: When no outer `entityManager` is provided, `queueRevision` owns its transaction and emits after commit. When an outer `entityManager` is passed, it returns post-commit data and the caller emits after their outer transaction commits. Use structured return values (`{ response, postCommit }`) to flow data out of transactions.
 - **Where**: `graph-revision.service.ts`, `graphs.service.ts`
 - **Applies to**: Any notification emission that might be nested inside transactions
+
+### [2026-02-23] Gotcha: EventEmitter.emit() does NOT await async handlers — causes race conditions
+- **What happened**: `executeTrigger` returned `externalThreadId` before the thread DB record existed. Frontend got 404.
+- **Root cause**: Thread creation happened in `AgentInvokeNotificationHandler` (6 steps deep from `executeTrigger`). Node.js `EventEmitter.emit()` fires async listeners as floating Promises — never awaited. In async mode, `runOrAppend()` is also fire-and-forgotten.
+- **Fix**: Eager thread creation in `executeTrigger()` before returning HTTP response. Catch unique constraint violations (PG `23505`) for idempotency — notification handler may win the race. Handler's existing update path fills in `source` and `lastRunId` later.
+- **Prevention**: When an HTTP response depends on a resource existing, create it synchronously in the request handler — never rely on async notification chains to create resources before the response.
