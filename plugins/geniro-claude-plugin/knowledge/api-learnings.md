@@ -63,6 +63,24 @@ Accumulated knowledge about the Geniro API codebase (`geniro/`). Updated automat
 - **Fix/Workaround**: Use `this.logger.log()` instead
 - **Prevention**: Check `DefaultLogger` interface before using
 
+### [2026-02-23] Pattern: SimpleEnrichmentHandler for structurally identical notification handlers
+- **Context**: 3 notification handlers (graph, graph-node-update, agent-state-update) had identical logic: look up owner, spread event, add scope
+- **Pattern**: Single `SimpleEnrichmentHandler` with `pattern = [Event1, Event2, Event3]` array. Uses `resolveExternalThreadId()` for the one handler that needed `parentThreadId` resolution. All others pass through unchanged.
+- **Where**: `v1/notification-handlers/services/event-handlers/simple-enrichment-handler.ts`
+- **Applies to**: When 3+ handlers share identical structure, consolidate into one configurable handler with a pattern array
+
+### [2026-02-23] Pattern: Synchronous in-process notification dispatch (no BullMQ)
+- **Context**: BullMQ was used as in-process pub/sub for notifications with concurrency 1 and a single subscriber — overkill
+- **Pattern**: Simple `NotificationsService` with a `subscribers[]` array. `emit()` calls subscribers sequentially with per-subscriber error isolation. No Redis connection, no serialization overhead.
+- **Where**: `v1/notifications/services/notifications.service.ts`
+- **Applies to**: In-process event dispatch where you don't need distributed processing, retry, or persistence. BullMQ should be reserved for actual distributed job queues (like `GraphRevisionQueueService`).
+
+### [2026-02-23] Gotcha: `buildHttpServerExtension` callback is synchronous
+- **Context**: Tried to `await createRedisIoAdapter(app)` inside the `appChangeCb` in `main.ts`
+- **Detail**: The `buildHttpServerExtension` callback signature is `(app: INestApplication) => INestApplication` — synchronous. Cannot use `async/await` directly.
+- **Fix/Workaround**: Fire-and-forget with `void adapter.connectToRedis()`. Document the race window (single-instance mode until Redis connects).
+- **Applies to**: Any async initialization that needs to happen in the `appChangeCb` callback
+
 ## Useful Commands & Shortcuts
 
 <!-- Non-obvious commands or workflows discovered. Format:

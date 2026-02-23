@@ -36,6 +36,28 @@ Record of significant architecture decisions made during development. Each entry
 - **Rationale**: Zero custom sidebar code. Adding future subpages = one resource + one route + one component. Refine auto-handles selected state, menu expansion, and collapsed sidebar popups.
 - **Consequences**: `Settings` is not directly navigable (clicking it expands the submenu). Future subpages follow the same pattern.
 
+### [2026-02-23] Decision: Redis adapter for Socket.IO multi-instance WebSocket broadcasting
+- **Task**: Notification system refactoring for multi-instance support
+- **Context**: Socket.IO used in-memory adapter — notifications on Instance A never reached clients on Instance B
+- **Decision**: Added `RedisIoAdapter` using `@socket.io/redis-adapter` (Redis Pub/Sub). Falls back to in-memory if Redis URL is empty or connection fails.
+- **Alternatives considered**: (1) Redis Streams adapter — overkill for ephemeral notifications. (2) Custom Redis Pub/Sub without Socket.IO adapter — reinventing the wheel. (3) Sticky sessions only — doesn't solve the fundamental problem (BullMQ routes job to one worker instance).
+- **Rationale**: Standard, well-maintained solution. Minimal code (one adapter class). Uses existing Redis infrastructure.
+- **Consequences**: All API instances must reach the same Redis server. Two extra Redis connections per instance (pub + sub).
+
+### [2026-02-23] Decision: Remove BullMQ from notification pipeline, use synchronous dispatch
+- **Task**: Simplify notification chain from 8 hops to 4
+- **Context**: BullMQ was used as in-process pub/sub with `concurrency: 1` and a single subscriber. No distributed processing benefit.
+- **Decision**: Replace with simple synchronous `NotificationsService` that calls subscribers directly. Sequential processing with per-subscriber error isolation.
+- **Alternatives considered**: (1) Keep BullMQ, consolidate handlers only — leaves unnecessary Redis connection + serialization. (2) NestJS EventEmitter2 — adds dependency without reducing complexity. (3) Node.js EventEmitter — still an indirection layer.
+- **Rationale**: Eliminates Redis connection for notifications, removes `SerializedBaseMessage` infrastructure, cuts chain from 8 to 4 hops. BullMQ reserved for actual distributed jobs (graph revisions, repo indexing).
+- **Consequences**: Notification processing is synchronous with producer. Re-entrant dispatch in `agent-invoke-notification-handler` works safely (emits to different handlers, no self-recursion).
+
+### [2026-02-23] Decision: Single `NotificationEvent` enum (removed `EnrichedNotificationEvent`)
+- **Task**: Unify duplicate notification event enums
+- **Context**: Two enums with identical string values existed — `NotificationEvent` (producers) and `EnrichedNotificationEvent` (handlers/gateway). Required manual switch-statement mapping.
+- **Decision**: Remove `EnrichedNotificationEvent`, use `NotificationEvent` everywhere. Zero wire-format change.
+- **Consequences**: One enum to maintain. New event types only need one addition. The mapping switch statement in `graph-revision-notification-handler` was eliminated.
+
 ### [2026-02-21] Decision: System settings endpoint for feature flags
 - **Task**: Conditionally show/hide GitHub App UI based on server configuration
 - **Context**: Frontend needs to know if GitHub App env vars are set without exposing raw config

@@ -30,10 +30,14 @@ Recurring reviewer feedback. When the same issue appears multiple times, it beco
 - **Correct approach**: After any refactoring that removes method calls, verify all constructor injections are still used. Remove unused ones along with their import statements and spec mocks.
 - **Agents affected**: api-agent
 
+### [2026-02-23] Issue: Dead code from alternative API designs
+- **Frequency**: 1
+- **Description**: `createRedisIoAdapter` helper function was exported but never called (the sync callback constraint forced a different pattern). The unused function and its `environment` import remained as dead code.
+- **Correct approach**: After choosing between alternative implementation approaches, delete the unused approach's code immediately. Don't leave exported-but-unused functions.
+- **Agents affected**: api-agent
+
 ## Quality Trends
 
-<!-- High-level observations about code quality over time. Format:
-### [date] Trend: <observation>
-- **Details**: what's improving or declining
-- **Action**: what to focus on
--->
+### [2026-02-23] Trend: Notification system complexity reduced
+- **Details**: 8-hop chain → 4-hop chain, 9 handlers → 6, removed BullMQ (for notifications), removed EventEmitter, removed duplicate enum, removed serialization layer. Clean first-pass reviewer approval on the restructuring.
+- **Action**: Continue applying this approach — periodically audit infrastructure choices (BullMQ, EventEmitter, etc.) to verify they still justify their complexity
