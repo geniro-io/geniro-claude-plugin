@@ -261,6 +261,35 @@ cd geniro/apps/api && pnpm test:e2e:local --spec "cypress/e2e/<path-to-test>.cy.
 
 ## Environment Hygiene (MANDATORY — zero tolerance for leftover artifacts)
 
+### Bash Command Discipline
+
+- **NEVER use long sleeps.** Do not run `sleep 300`, `sleep 600`, or any sleep longer than 60 seconds in a single command. Long sleeps block the entire session and waste context.
+- **Use short polling loops instead.** If you need to wait for something (container startup, server readiness, background job completion), poll in short intervals:
+  ```bash
+  # WRONG — blocks for 5 minutes
+  sleep 300 && docker logs geniro-daytona-runner-1 2>&1 | tail -5
+
+  # RIGHT — poll every 30s, up to 10 attempts (5 min total)
+  for i in {1..10}; do
+    docker logs geniro-daytona-runner-1 2>&1 | tail -5
+    echo "--- attempt $i ---"
+    sleep 30
+  done
+
+  # RIGHT — exit early when ready
+  for i in {1..10}; do
+    if curl -sf http://localhost:5000/api/v1/health > /dev/null 2>&1; then
+      echo "Server ready"; break
+    fi
+    echo "Waiting... attempt $i"
+    sleep 15
+  done
+  ```
+- **Maximum single sleep: 60 seconds.** If you need longer total wait time, loop with `sleep 30` or `sleep 60` and check the condition each iteration.
+- **Exit early when the condition is met.** Don't blindly sleep the full duration — check and break out as soon as the thing you're waiting for is ready.
+
+### Artifact Cleanup
+
 - Prefer existing project tooling over ad-hoc temporary scripts.
 - **Delete ALL temporary artifacts before reporting completion:**
   - Test data created in the database during integration/E2E tests (tests must clean up in `afterEach`/`afterAll`)

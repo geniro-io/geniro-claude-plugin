@@ -180,3 +180,4 @@ Use **NEEDS ATTENTION ⚠️** if there are items in "Reported (not auto-cleaned
 - **Never kill processes on unknown ports** — only kill servers on ports 5000 and 5174.
 - **Always produce a report** — even if nothing was found, confirm the workspace is clean.
 - **Be thorough** — check both `geniro/` and `geniro-web/` directories, plus `/tmp`.
+- **Never use long sleeps** — maximum single sleep is 60 seconds. If you need to wait for something, poll in a loop with `sleep 30` and check the condition each iteration. Exit the loop early when the condition is met.
