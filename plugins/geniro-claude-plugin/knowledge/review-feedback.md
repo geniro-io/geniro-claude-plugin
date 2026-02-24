@@ -36,6 +36,12 @@ Recurring reviewer feedback. When the same issue appears multiple times, it beco
 - **Correct approach**: After choosing between alternative implementation approaches, delete the unused approach's code immediately. Don't leave exported-but-unused functions.
 - **Agents affected**: api-agent
 
+### [2026-02-24] Issue: Upsert ON CONFLICT overwrites set-once columns with null
+- **Frequency**: 1
+- **Description**: `ON CONFLICT DO UPDATE SET source = EXCLUDED.source` nulls out existing `source` when the new INSERT didn't provide a value. Caught in review before shipping.
+- **Correct approach**: Only include columns in `ON CONFLICT ... DO UPDATE SET` that should ALWAYS be refreshed (e.g., `status`, `lastRunId`). Set-once columns (`source`, `metadata`, `createdBy`, `name`) must be excluded from the update list.
+- **Agents affected**: api-agent
+
 ## Quality Trends
 
 ### [2026-02-23] Trend: Notification system complexity reduced

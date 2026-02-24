@@ -81,6 +81,57 @@ Accumulated knowledge about the Geniro API codebase (`geniro/`). Updated automat
 - **Fix/Workaround**: Fire-and-forget with `void adapter.connectToRedis()`. Document the race window (single-instance mode until Redis connects).
 - **Applies to**: Any async initialization that needs to happen in the `appChangeCb` callback
 
+### [2026-02-24] Pattern: Upsert for race-prone entity creation in notification handlers
+- **Context**: `executeTrigger` eagerly creates threads, but `AgentInvokeNotificationHandler` also creates threads. Race condition: handler's `getOne` misses uncommitted row → INSERT fails with 23505 → handler throws → side-effects (name generation) skipped.
+- **Pattern**: Replace `getOne` + `create` (TOCTOU) with `INSERT ... ON CONFLICT DO UPDATE` upsert via TypeORM's `orUpdate()`. After upsert, `getOne` to fetch the hydrated entity. Single atomic SQL eliminates the race entirely.
+- **Where**: `threads.dao.ts:upsertByExternalThreadId()`, `agent-invoke-notification-handler.ts`
+- **Gotcha**: Only include columns in `ON CONFLICT ... DO UPDATE SET` that should ALWAYS be refreshed. Set-once columns (like `source`, `metadata`, `createdBy`) must NOT be in the update list — `EXCLUDED.column` evaluates to null/DEFAULT when the column wasn't provided in the INSERT values, silently overwriting existing data.
+- **Applies to**: Any notification handler that creates entities also created eagerly in HTTP request handlers
+
+### [2026-02-24] Gotcha: Reasoning models need explicit `maxOutputTokens` for structured output
+- **What happened**: `gpt-5-mini` via OpenRouter consumed all output tokens on internal reasoning, returning empty content (`"content": ""`, `finish_reason: "length"`). Thread name generation silently failed.
+- **Root cause**: `OpenaiService.jsonRequest()` did not pass `max_tokens`/`max_output_tokens`. Reasoning models (gpt-5-mini, o-series) share the output token budget between reasoning and visible output. Default budget was too low.
+- **Fix**: Added optional `maxOutputTokens` parameter to `jsonRequest()`. Set to 1024 for thread name generation. Routes as `max_output_tokens` (Responses API) or `max_tokens` (Chat Completions API).
+- **Prevention**: Always specify `maxOutputTokens` when calling reasoning models for structured output. 1024 is a safe default for small JSON responses.
+
+### [2026-02-24] Gotcha: CLIProxyAPI returns "unknown provider" when OAuth session is lost
+- **What happened**: All oauth models (`claude-sonnet-4.6-oauth`, `claude-haiku-4.5-oauth`) returned 502 with "unknown provider for model claude-sonnet-4-6"
+- **Root cause**: CLIProxyAPI had no authenticated sessions — `/v1/models` returned empty list `{"data":[]}`
+- **Fix**: Re-authenticate via CLIProxy management panel at `http://localhost:8317`
+- **Diagnosis**: Check `curl -s http://localhost:8317/v1/models -H "Authorization: Bearer cliproxy-local-key"` — if `data: []`, re-auth is needed
+
+### [2026-02-24] Pattern: DaytonaRuntime extends BaseRuntime with Sandbox lifecycle
+- **Context**: Added Daytona as a second runtime provider alongside Docker
+- **Pattern**: `DaytonaRuntime` extends `BaseRuntime`. `start()` calls `daytona.create()`, `stop()` calls `daytona.delete()`. `exec()` routes to `sandbox.process.executeCommand()` (no session) or `createSession()` + `executeSessionCommand()` (session-based). Sessions tracked in `Set<string>` on the class. `execStream()` throws a descriptive error — Daytona SDK lacks bidirectional streams (MCP nodes require Docker runtime).
+- **Where**: `apps/api/src/v1/runtime/services/daytona-runtime.ts`
+- **Applies to**: Adding future alternative runtime providers
+
+### [2026-02-24] Gotcha: Daytona session becomes stale after timeout/abort — must recreate
+- **What happened**: After a session-based exec timed out, the session remained in the tracked Set but was internally dead. Subsequent commands using that session hung indefinitely.
+- **Fix**: In the `execInSession()` catch block, call `recreateSession(sessionId)` before rethrowing. This creates a fresh session under the same ID so the next call works.
+- **Prevention**: Session-based execs in Daytona need a recreation strategy on any error — stale sessions don't self-recover.
+
+### [2026-02-24] Gotcha: Daytona docker-compose env vars with org quota defaults to 0
+- **What happened**: Daytona API started fine but sandbox creation failed with "No available runners". Runner was healthy.
+- **Root cause**: The API uses org quotas (`ADMIN_MAX_CPU_PER_SANDBOX`, `ADMIN_MAX_MEMORY_PER_SANDBOX`, `ADMIN_MAX_DISK_PER_SANDBOX`) that default to 0, blocking all sandbox creation.
+- **Fix**: Set all org quota env vars to 0 explicitly (or a reasonable limit) in docker-compose. They default to 0 which means "nothing allowed".
+
+### [2026-02-24] Gotcha: Daytona SDK toolbox URL mismatch with self-hosted runner
+- **What happened**: Daytona SDK constructs toolbox URLs as `/toolbox/<sandboxId>/<path>` but the self-hosted runner expects `/sandboxes/<sandboxId>/toolbox/<path>`.
+- **Fix**: Add an nginx reverse proxy that rewrites the URL path. Also swap the user API key with the runner API key in the Authorization header.
+- **Where**: `.docker/daytona-proxy/nginx.conf`
+
+### [2026-02-24] Gotcha: Daytona runner URL requires `/api` suffix
+- **What happened**: Runner logged "undefined response type" — all responses were malformed.
+- **Root cause**: `DAYTONA_API_URL` was set to `http://daytona-api:3986` but the API expects `http://daytona-api:3986/api`.
+- **Fix**: Always include `/api` suffix in `DAYTONA_API_URL`.
+
+### [2026-02-24] Gotcha: nginx `resolver 127.0.0.11` is Docker-specific — breaks in Podman
+- **What happened**: All 5 Daytona integration tests timed out at 30s each. nginx error: "could not be resolved (connection refused)".
+- **Root cause**: `127.0.0.11` is Docker's embedded DNS resolver. Podman uses a different DNS address. Using it with variable-based `proxy_pass` causes all requests to hang.
+- **Fix**: Replace `resolver` + variable-based `proxy_pass` with an `upstream` block. Hostname resolution happens at nginx config load via the system's DNS, which works in both Docker and Podman.
+- **Applies to**: Any nginx config inside docker-compose that uses `resolver` for DNS-based routing
+
 ## Useful Commands & Shortcuts
 
 <!-- Non-obvious commands or workflows discovered. Format:

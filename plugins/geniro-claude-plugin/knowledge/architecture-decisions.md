@@ -73,6 +73,25 @@ Record of significant architecture decisions made during development. Each entry
 - **Completed**: All 8 controllers now use `@CtxStorage()` (GraphsController, GraphRevisionsController, KnowledgeController, GitRepositoriesController, GitHubAppController, ThreadsController, AnalyticsController, AiSuggestionsController). Zero services inject `AuthContextService`.
 - **Consequences**: All services are singleton-scoped. No scope bubbling. Notification handlers use direct constructor injection. Services are testable without mocking request context.
 
+### [2026-02-24] Decision: Unified RuntimeTemplate with discriminated union schema
+- **Task**: Add Daytona runtime provider; user rejected a separate DaytonaRuntimeTemplate
+- **Context**: Original DockerRuntimeTemplate was a single-branch Zod schema. Adding Daytona would require either a second template or a unified one.
+- **Decision**: Refactored `DockerRuntimeTemplate` → `RuntimeTemplate` with `z.discriminatedUnion('runtimeType', [DockerBranch, DaytonaBranch])`. Template ID changed from `'docker-runtime'` to `'runtime'`. Old ID migrated in DB via hand-written SQL JSONB update.
+- **Rationale**: Single template in the graph editor with a `runtimeType` dropdown. No template duplication. Future runtime providers = new union branch only.
+- **Consequences**: A DB migration is needed for every template ID rename. `DockerRuntimeTemplate` exported as backward-compat alias.
+
+### [2026-02-24] Decision: DEFAULT_RUNTIME_TYPE env var for global runtime selection
+- **Task**: "WE should have an environment where we specify which provider we are currently using"
+- **Decision**: `DEFAULT_RUNTIME_TYPE` env var (`Docker` | `Daytona`) in environment files. `RuntimeProvider.getDefaultRuntimeType()` returns it with fallback to Docker. Used by `RepoIndexService` for repo indexing and any future code that creates runtimes without an explicit type.
+- **Consequences**: Per-node runtime type override is possible via the template schema. `DEFAULT_RUNTIME_TYPE` is the system-wide fallback.
+
+### [2026-02-24] Decision: Minimal Daytona docker-compose setup (3 services, not 12)
+- **Task**: Add Daytona to docker-compose for local development
+- **Context**: Official Daytona docker-compose has 12+ services. We only need API + runner + nginx proxy.
+- **Decision**: 3 services behind `profiles: [daytona]`: `daytona-api` (v0.143.0), `daytona-runner` (v0.143.0), `daytona-proxy` (nginx). Pinned to v0.143.0 (latest stable; SDK 0.144.0 is backward compatible). Separate `daytona` Docker network. Services only start with `docker compose --profile daytona up`.
+- **Rationale**: User confirmed minimal setup is acceptable for local dev. Full production Daytona setup is a separate infra concern.
+- **Consequences**: Adding more Daytona features (authentication, teams) would require adding services to docker-compose.
+
 ### [2026-02-21] Decision: System settings endpoint for feature flags
 - **Task**: Conditionally show/hide GitHub App UI based on server configuration
 - **Context**: Frontend needs to know if GitHub App env vars are set without exposing raw config
