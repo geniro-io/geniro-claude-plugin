@@ -10,7 +10,7 @@
     {
       "name": "geniro-claude-plugin",
       "description": "Multi-agent orchestrator for the Geniro platform with self-improving knowledge base. Breaks down feature requests into architecture, implementation, and review phases using specialized agents for API (NestJS) and Web (React) codebases.",
-      "version": "1.7.9",
+      "version": "1.7.10",
       "author": {
         "name": "Sergey Razumovskij",
         "email": "s.razumru@gmail.com"

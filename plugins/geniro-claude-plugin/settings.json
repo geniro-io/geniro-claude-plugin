@@ -21,7 +21,8 @@
       "Bash(mkdir -p .claude/project-features*)",
       "Bash(mv .claude/project-features/*)",
       "Bash(ls .claude/project-features*)",
-      "Bash(*pnpm audit*)"
+      "Bash(*pnpm audit*)",
+      "Bash(PGPASSWORD=postgres psql -h localhost -p 5439 -U postgres -d geniro *)"
     ]
   }
 }
