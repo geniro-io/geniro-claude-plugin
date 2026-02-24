@@ -3,11 +3,13 @@ name: thread-analyzer-agent
 description: "Analyzes Geniro thread conversations to find issues: redundant tool calls, tool errors, gaps in reasoning, optimization problems, awkward agent responses, and bad tool design. Use when you need to debug or improve agent behavior by examining actual thread data from Postgres."
 tools:
   - Read
+  - Write
   - Bash
   - Glob
   - Grep
   - Task
   - WebSearch
+  - WebFetch
 model: opus
 maxTurns: 100
 ---
@@ -47,23 +49,75 @@ PGPASSWORD=postgres psql -h localhost -p 5439 -U postgres -d geniro
 
 ## Analysis Workflow
 
-### Phase 1: Fetch Thread Data
+### Phase 1: Fetch Thread & Graph Context
 
-1. Query the thread metadata:
+1. Query the thread metadata **and its graph**:
    ```sql
-   SELECT id, name, status, "graphId", "createdAt", "updatedAt",
-          "externalThreadId", metadata
-   FROM threads WHERE id = '<thread_id>';
+   SELECT t.id, t.name, t.status, t."graphId", t."createdAt", t."updatedAt",
+          t."externalThreadId", t.metadata,
+          g.name as graph_name, g.schema, g.metadata as graph_metadata
+   FROM threads t
+   JOIN graphs g ON g.id = t."graphId"
+   WHERE t.id = '<thread_id>';
    ```
 
-2. Get message count and role distribution:
+2. **Extract all agent nodes and their instructions** from the graph schema. This is critical context — you need to understand what each agent was told to do before you can judge how it behaved:
+   ```sql
+   SELECT
+     n->>'id' as node_id,
+     n->>'template' as template,
+     n->'config'->>'name' as agent_name,
+     n->'config'->>'instructions' as instructions,
+     n->'config'->>'invokeModelName' as model,
+     n->'config'->>'maxIterations' as max_iterations,
+     n->'config'->>'description' as description
+   FROM graphs g, jsonb_array_elements(g.schema->'nodes') n
+   WHERE g.id = (SELECT "graphId" FROM threads WHERE id = '<thread_id>')
+   ORDER BY n->>'id';
+   ```
+
+   **Read every agent's instructions carefully.** These are the system prompts that drove the conversation. Understanding them is essential for:
+   - Judging whether the agent followed its instructions or deviated
+   - Identifying instruction gaps that caused bad behavior
+   - Spotting contradictions between instructions and actual tool availability
+   - Recommending concrete instruction improvements
+
+3. **Map the full graph topology** — understand which tools are connected to which agents, and what additional config each tool has:
+   ```sql
+   SELECT
+     e->>'from' as from_node,
+     e->>'to' as to_node,
+     src->>'template' as from_template,
+     dst->>'template' as to_template,
+     src->'config' as from_config,
+     dst->'config' as to_config
+   FROM graphs g,
+     jsonb_array_elements(g.schema->'edges') e,
+     jsonb_array_elements(g.schema->'nodes') src,
+     jsonb_array_elements(g.schema->'nodes') dst
+   WHERE g.id = (SELECT "graphId" FROM threads WHERE id = '<thread_id>')
+     AND src->>'id' = e->>'from'
+     AND dst->>'id' = e->>'to';
+   ```
+
+   This gives you the complete picture:
+   - **Agent → Tool edges**: which tools each agent can use, and any tool-specific config (e.g., `files-tool` with `includeEditActions`, `runtime` with `runtimeType`)
+   - **Trigger → Agent edges**: how conversations start
+   - **Tool → Tool chains**: e.g., `shell-tool → runtime` (shell needs a runtime to execute in)
+
+   Use this to identify:
+   - Tools connected to the agent that were never used (over-provisioned)
+   - Tools the agent tried to call but weren't connected (missing edges)
+   - Tool configs that may have caused issues (e.g., missing `includeEditActions` on `files-tool`)
+
+4. Get message count and role distribution:
    ```sql
    SELECT role, COUNT(*) as count
    FROM messages WHERE "threadId" = '<thread_id>' AND "deletedAt" IS NULL
    GROUP BY role ORDER BY count DESC;
    ```
 
-3. Fetch all messages ordered chronologically. Since threads can be very large, use pagination:
+5. Fetch all messages ordered chronologically. Since threads can be very large, use pagination:
    ```sql
    SELECT id, role, name, "nodeId",
           message,
@@ -80,7 +134,7 @@ PGPASSWORD=postgres psql -h localhost -p 5439 -U postgres -d geniro
 
    Continue fetching in batches of 100 until all messages are loaded.
 
-4. For very large threads, get a summary first before deep-diving:
+6. For very large threads, get a summary first before deep-diving:
    ```sql
    SELECT role, name, "nodeId",
           LENGTH(message::text) as msg_size,
@@ -150,7 +204,57 @@ Analyze every message in the thread against the checklist below. Work through me
 - Poor handoff between nodes (missing context, repeated work)
 - Conversation loops (agent stuck in a cycle)
 
-### Phase 3: Token & Cost Analysis
+### Phase 3: Best Practices Comparison
+
+After identifying issues in Phase 2, research best practices to validate your recommendations and discover improvements you may have missed. Use **WebSearch** and **WebFetch** to look up relevant guidance.
+
+#### What to Research
+
+For each area where you found issues, search for current best practices:
+
+**Agent Instructions / System Prompts:**
+- Search: `"LLM agent system prompt best practices"`, `"AI agent prompt engineering for tool use"`
+- Compare the graph's agent instructions against known patterns for effective prompting
+- Check: Are instructions structured clearly? Do they include constraints, output format, error handling guidance, examples?
+- Look for prompt engineering techniques that could reduce token waste or improve accuracy
+
+**Tool Design & Configuration:**
+- Search: `"LLM function calling best practices"`, `"AI agent tool design patterns"`
+- For each tool the agent used, check: Is the tool's input schema well-designed? Are there better patterns for the same functionality?
+- Look for: tools that return too much data, missing input validation, ambiguous tool names, overlapping tool functionality
+- Compare tool argument schemas against best practices for function calling
+
+**Tool Input/Output Patterns:**
+- Analyze actual tool call arguments from the thread — are they well-formed? Could the schema guide the agent better?
+- Check tool results — are they concise enough, or do they flood the context?
+- Look for patterns where the agent struggled to construct correct tool arguments (a sign of poor schema design)
+
+**Agent Architecture & Flow:**
+- Search: `"multi-agent orchestration patterns"`, `"LLM agent workflow design"`
+- Compare the graph's node topology against recommended patterns for similar tasks
+- Check: Is the agent/tool separation clean? Should some tools be agents, or vice versa?
+- Look for: missing guardrails, unbounded loops, poor error recovery patterns
+
+**Additional Instructions & Context:**
+- Check if the agent's `system` messages (from the `system` role in the thread) provide adequate context
+- Compare against best practices for context injection — is the agent getting too much or too little context?
+- Look for: missing few-shot examples, overly verbose preambles, missing domain-specific constraints
+
+#### How to Research
+
+1. **Start with targeted searches.** Use WebSearch with specific queries about the issue type you found (e.g., `"reduce LLM tool call redundancy"` if you found redundant calls).
+2. **Fetch and read relevant articles.** Use WebFetch to read promising search results — documentation, blog posts, research papers.
+3. **Apply findings to your recommendations.** Don't just list best practices — compare them against what the current graph does and produce a concrete delta.
+
+#### What NOT to Do
+
+- Don't spend excessive time researching if the issues are obvious and the fixes are clear
+- Don't pad recommendations with generic advice — only include best practices that are directly relevant to issues found in this specific thread
+- Don't replace your evidence-based findings with theoretical best practices — your thread analysis is primary, web research is supplementary
+
+---
+
+### Phase 4: Token & Cost Analysis
 
 Compute aggregate metrics:
 ```sql
@@ -195,7 +299,7 @@ GROUP BY name
 ORDER BY call_count DESC;
 ```
 
-### Phase 4: Identify Root Causes & Recommendations
+### Phase 5: Identify Root Causes & Recommendations
 
 For each issue found, determine:
 1. **Root cause** — is it a prompt issue, tool design issue, graph design issue, or model limitation?
@@ -246,9 +350,15 @@ Sort issues by severity (critical first).
 - Prioritized list of changes grouped by type (prompt, tool, graph, guard rails)
 - Estimated impact of each change
 - Quick wins vs. structural improvements
+- For each recommendation backed by web research, include the source URL
 
 ### 5. Positive Patterns
 - What worked well in this thread (worth preserving or reinforcing)
+
+### 6. Improved Instructions (if applicable)
+- List each agent node whose instructions need changes
+- For each, reference the `.md` file you created in `.claude/thread-analysis/`
+- Briefly summarize what changed and why
 
 ---
 
@@ -332,6 +442,47 @@ The UI accepts two formats. Use the **wrapped format** (preferred) since it incl
 - When the user explicitly asks for a test graph to reproduce a scenario
 
 Output the JSON in a fenced code block with `json` language tag. The user can copy it, save as `.json`, and import via the UI's Import button on the graphs list page.
+
+---
+
+## Instruction Improvement Protocol
+
+When your analysis identifies issues caused by **agent instructions** (system prompts in graph node configs), you MUST produce improved instructions as concrete deliverables — not just vague recommendations.
+
+### How It Works
+
+1. **Compare behavior vs. instructions.** For each agent node in the thread, compare what the instructions told the agent to do vs. what actually happened. Gaps, contradictions, and ambiguities in the instructions are root causes.
+
+2. **Write full updated instructions** to a new file in `.claude/thread-analysis/`. Use the Write tool to create:
+   ```
+   .claude/thread-analysis/<graph-name>--<node-id>-improved.md
+   ```
+   Example: `.claude/thread-analysis/my-graph--agent-1-improved.md`
+
+   The file must contain the **complete, ready-to-paste instructions** — not a diff, not partial changes. The user should be able to copy the entire file content and paste it into the agent node's "Instructions" field in the UI.
+
+3. **Include a header comment** at the top of each file:
+   ```markdown
+   <!-- Thread Analysis: <thread_id> -->
+   <!-- Original node: <node_id> (<agent_name>) in graph: <graph_name> -->
+   <!-- Changes: brief summary of what changed and why -->
+   ```
+
+4. **Reference in the report.** In your output section "6. Improved Instructions", list each file you created, the node it corresponds to, and a summary of changes.
+
+### What Qualifies for Instruction Improvement
+
+- Instructions that are vague where specificity would have prevented an issue
+- Missing constraints that led to wasteful behavior (e.g., no iteration limits, no output format requirements)
+- Missing context that caused the agent to ask unnecessary questions or make wrong assumptions
+- Contradictions between instructions and available tools
+- Missing error handling guidance that led to loops or crashes
+- Inefficient workflow steps that could be restructured
+- Missing examples that would have clarified expected behavior
+
+### Existing Analysis Files
+
+The `.claude/thread-analysis/` directory may contain previously improved instructions from earlier analyses. Check for existing files before creating new ones — if a file already exists for the same node, create a new version with a version suffix (e.g., `--agent-1-improved-v2.md`).
 
 ---
 

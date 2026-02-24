@@ -5,11 +5,13 @@ context: fork
 agent: thread-analyzer-agent
 allowed-tools:
   - Read
+  - Write
   - Bash
   - Glob
   - Grep
   - Task
   - WebSearch
+  - WebFetch
 argument-hint: "[thread-id] [optional notes about what went wrong]"
 ---
 
