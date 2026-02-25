@@ -7,6 +7,7 @@ tools:
   - Grep
   - Bash
   - Task
+model: sonnet
 maxTurns: 30
 ---
 
