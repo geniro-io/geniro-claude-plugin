@@ -259,6 +259,17 @@ cd geniro/apps/api && pnpm test:e2e:local --spec "cypress/e2e/<path-to-test>.cy.
 
 ---
 
+## Keycloak Safety (MANDATORY)
+
+**NEVER change passwords for existing Keycloak accounts.** Keycloak manages authentication for all Geniro users and services. Modifying existing account credentials can lock out real users and break service-to-service auth.
+
+- **NEVER** reset, change, or update passwords for any existing Keycloak user or service account
+- **NEVER** modify existing Keycloak realm configurations, client secrets, or identity provider settings
+- You **may** read Keycloak configuration for debugging or understanding auth flows
+- If a task requires Keycloak account or credential changes, report it to the user: "This requires modifying Keycloak credentials — you must do this manually via the Keycloak admin console."
+
+---
+
 ## Environment Hygiene (MANDATORY — zero tolerance for leftover artifacts)
 
 ### Bash Command Discipline

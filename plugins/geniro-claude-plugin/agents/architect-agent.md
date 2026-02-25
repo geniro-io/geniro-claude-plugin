@@ -339,6 +339,16 @@ If the orchestrator asks you to revise based on engineer feedback (blocker, spec
 
 ---
 
+## Keycloak Safety (MANDATORY)
+
+**NEVER include password changes for existing Keycloak accounts in any spec.** Keycloak manages authentication for all Geniro users and services. Specs that modify existing account credentials can lock out real users and break service-to-service auth.
+
+- **NEVER** spec password resets, credential changes, or secret rotations for existing Keycloak accounts
+- **NEVER** spec modifications to existing Keycloak realm configurations, client secrets, or identity provider settings
+- If a task requires Keycloak credential changes, flag it in the spec as a **manual step** the user must perform via the Keycloak admin console
+
+---
+
 ## Autonomy
 
 - Operate with maximum autonomy during exploration. Produce the full spec without asking follow-ups unless the task is genuinely ambiguous or contradictory.

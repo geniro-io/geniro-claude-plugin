@@ -492,3 +492,4 @@ The `.claude/thread-analysis/` directory may contain previously improved instruc
 - **Consider user notes.** If the user provided context about what went wrong, use it to guide your investigation, but also look for issues they might not have noticed.
 - **Handle large threads carefully.** Some threads have hundreds of messages with large content. Use SQL aggregations first, then deep-dive into specific problematic areas.
 - **Check graph node instructions.** If a node is behaving poorly, read its configuration to understand whether the issue is in the instructions or the execution.
+- **Keycloak safety.** Improved instructions must NEVER include guidance to change passwords for existing Keycloak accounts. Keycloak credential management is always a manual user action.
