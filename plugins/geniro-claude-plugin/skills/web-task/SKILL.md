@@ -42,10 +42,25 @@ Fix any issues and re-run until it passes.
 5. If auth is required, attempt Keycloak login. If auth is unavailable, document this but still verify non-auth-gated pages.
 6. **The task is NOT done until visual verification is complete** (or explicitly skipped with justification after attempting auth).
 
+### Step 3: Archive completed feature (if from backlog)
+
+If `$ARGUMENTS` references a feature from `.claude/project-features/` (e.g., starts with `feature:` followed by a name), archive it after successful completion:
+
+1. Find the feature file: `.claude/project-features/<name>.md`
+2. Update YAML frontmatter: set `status: completed` and `updated: <today's date>` using the Edit tool
+3. Move to completed:
+   ```bash
+   mkdir -p .claude/project-features/completed
+   mv .claude/project-features/<name>.md .claude/project-features/completed/<name>.md
+   ```
+
+Skip this step if the task is not from the feature backlog (ad-hoc description).
+
 ### Report back with:
 - Files created/modified
 - Key decisions made
 - `full-check` result (pass/fail)
 - **Visual verification result** — pages visited, screenshots reviewed, issues found/fixed (or why skipped)
 - Whether API client regeneration is needed (`pnpm generate:api`)
+- Feature archived (yes/no — which feature was moved to completed/)
 - Any issues or follow-ups

@@ -7,6 +7,7 @@ allowed-tools:
   - Grep
   - Bash
   - Task
+  - AskUserQuestion
 argument-hint: "[feature or problem description]"
 ---
 
@@ -20,6 +21,27 @@ $ARGUMENTS
 
 ## Interview Protocol
 
+### CRITICAL: Use AskUserQuestion for ALL questions
+
+**NEVER present questions as plain text.** Always use the `AskUserQuestion` tool so the user can select from predefined choices instead of typing.
+
+For every question you ask:
+1. **Formulate 2–4 concrete answer options** based on your understanding of the feature and codebase patterns
+2. **Use short, descriptive labels** for each option (1–5 words)
+3. **Add a description** explaining the implications of each choice
+4. **Use `multiSelect: true`** when multiple options can apply simultaneously
+5. **Always include a meaningful "Other" implicitly** — the tool adds it automatically for custom input
+6. **Group related questions** — you can ask up to 4 questions per `AskUserQuestion` call
+7. **Use the `header` field** for a short category label (e.g., "Scope", "Priority", "Data model")
+
+**Example — instead of asking:**
+> "Should this feature support real-time updates via WebSocket, or is polling sufficient?"
+
+**Use AskUserQuestion with options:**
+- Label: "WebSocket (real-time)", Description: "Push updates instantly via existing Socket.IO infrastructure"
+- Label: "Polling", Description: "Client polls API periodically, simpler but adds latency"
+- Label: "Both", Description: "WebSocket primary, polling as fallback"
+
 ### Round 1: General Understanding
 
 Based on the feature description, ask the user clarifying questions about:
@@ -30,7 +52,7 @@ Based on the feature description, ask the user clarifying questions about:
 - **Priority**: Must-have vs nice-to-have aspects
 - **Constraints**: Performance requirements, backward compatibility, deadlines
 
-Present **3–7 focused questions**. Do not ask obvious questions the description already answers. Do not ask questions you can answer yourself by reading the codebase.
+Present **3–7 focused questions** via `AskUserQuestion`. Do not ask obvious questions the description already answers. Do not ask questions you can answer yourself by reading the codebase. Provide concrete answer choices for each question based on common patterns.
 
 Wait for the user to respond before proceeding to Round 2.
 
@@ -58,13 +80,13 @@ Based on what you find in the code, ask the user questions about:
 - **Migration**: How existing data/users transition to the new behavior
 - **Existing patterns**: Whether to reuse or diverge from patterns you found
 
-Present **3–5 code-informed questions**. Reference specific files/patterns you found.
+Present **3–5 code-informed questions** via `AskUserQuestion`. Reference specific files/patterns you found. Use your codebase findings to create informed answer choices (e.g., "Reuse GraphEntity pattern" vs "New standalone entity").
 
 Wait for the user to respond before proceeding to Round 3.
 
 ### Round 3: Edge Cases
 
-After Round 2 answers, present a comprehensive edge case checklist and ask the user to confirm or adjust:
+After Round 2 answers, present a comprehensive edge case checklist via `AskUserQuestion` with `multiSelect: true`. Group related edge cases and let the user select which ones apply:
 
 - **Error states**: What happens when things fail (network, validation, permissions)
 - **Concurrent access**: Multiple users/agents operating on the same resource
@@ -73,7 +95,7 @@ After Round 2 answers, present a comprehensive edge case checklist and ask the u
 - **Backward compatibility**: How existing data, API clients, and users are affected
 - **Real-time sync**: WebSocket event implications, race conditions
 
-Present the edge cases as a numbered list with your proposed handling for each. Ask the user to confirm, modify, or add to them.
+For each question, propose your recommended handling as the first option (with "(Recommended)" suffix), and offer alternatives. The user picks which approach they prefer.
 
 Wait for the user to respond before producing the spec.
 
@@ -139,8 +161,9 @@ Present the spec to the user for final confirmation. If they approve, it's ready
 
 ## Rules
 
+- **ALWAYS use AskUserQuestion** — never present interview questions as plain text. Every question must have selectable choices so the user can click instead of type
 - **Be concise in questions** — 1-2 sentences per question, not paragraphs
 - **Don't repeat information** — if the user already stated something, reference it, don't ask again
 - **Don't over-interview** — if the feature is straightforward, skip unnecessary rounds
-- **Be opinionated** — propose sensible defaults for edge cases instead of asking "what should happen here?" for every possibility
+- **Be opinionated** — propose sensible defaults as the first option (with "(Recommended)") instead of asking open-ended "what should happen here?"
 - **Ground questions in code** — Round 2 questions should reference actual files and patterns you found, not hypothetical concerns

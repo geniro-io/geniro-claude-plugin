@@ -38,6 +38,15 @@ For each `.md` file found (excluding the `completed/` subdirectory), read the YA
 - `created`
 - `updated`
 
+**Auto-archive misplaced completed features:** If any feature in the main directory has `status: completed`, it should have been moved but wasn't. Automatically fix this:
+1. Update `updated` to today's date if not already set
+2. Move the file:
+   ```bash
+   mkdir -p .claude/project-features/completed
+   mv .claude/project-features/<name>.md .claude/project-features/completed/<name>.md
+   ```
+3. Report: `Auto-archived <name> to completed/ (status was already 'completed')`
+
 Also check `.claude/project-features/completed/` for recently completed features.
 
 **Present as a formatted table:**
@@ -58,6 +67,9 @@ Also check `.claude/project-features/completed/` for recently completed features
 
 To implement the next approved feature:
   /orchestrate feature: <name>
+
+To mark a feature as done:
+  /features complete <name>
 
 To create a new feature:
   /new-feature <description>
