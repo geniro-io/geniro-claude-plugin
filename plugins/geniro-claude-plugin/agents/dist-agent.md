@@ -116,6 +116,53 @@ When reviewing or modifying the chart:
 
 ---
 
+## Local Kubernetes + Docker Compose Coexistence
+
+**IMPORTANT:** A developer may run both the Docker Compose dev stack (`geniro/docker-compose.yml`) AND a local Kubernetes cluster (kind, minikube, k3s) simultaneously. This creates two conflict categories to avoid.
+
+### Category 1 — Port collisions on the host
+
+Helm chart services default to `ClusterIP` — invisible to the host. **Conflict only occurs when using `kubectl port-forward` or NodePort.** Docker Compose binds these host ports:
+
+| Service        | Docker Compose host port |
+|----------------|--------------------------|
+| PostgreSQL     | **5439** (not 5432)      |
+| Redis          | 6379                     |
+| Qdrant HTTP    | 6333                     |
+| Qdrant gRPC    | 6334                     |
+| LiteLLM        | 4000                     |
+| Keycloak       | 8082                     |
+| Zitadel        | 8085                     |
+| Daytona API    | 3986                     |
+| Daytona Runner | 8080                     |
+| Daytona Proxy  | 3987                     |
+
+**Rules:**
+- **Never use `NodePort` service type** for local k8s — it binds to all host interfaces.
+- **Always use offset local ports** when port-forwarding to avoid collisions:
+
+| K8s service    | Avoid    | Use instead |
+|----------------|----------|-------------|
+| API (5000)     | `:5000`  | `:15000`    |
+| Web (4173)     | `:4173`  | `:14173`    |
+| LiteLLM (4000) | `:4000`  | `:14000`    |
+| Keycloak (80)  | `:8080`  | `:18080`    |
+| PostgreSQL     | `:5432`  | `:15432`    |
+| Redis          | `:6379`  | `:16379`    |
+| Qdrant         | `:6333`  | `:16333`    |
+
+### Category 2 — Shared database connections (bridge mode)
+
+When `postgresql.enabled=false` and `externalPostgresql.host` points at the Docker Compose PostgreSQL:
+
+1. **Port gotcha**: Docker Compose PostgreSQL is on host port **5439**, not 5432. Set `externalPostgresql.port: 5439`.
+2. **`localhost` doesn't work inside pods**: Use the actual host gateway IP (not `localhost`). For kind: add `--add-host`. For minikube: `minikube ssh 'grep host.minikube.internal /etc/hosts | awk "{print $1}"'`.
+3. **Shared database = data corruption**: Both stacks default to database `geniro`. Use a different name (e.g., `geniro_k8s`) to prevent mutual corruption.
+
+**Recommended approach for local k8s testing**: Use fully isolated in-cluster services (`postgresql.enabled: true`, `redis.enabled: true`, `qdrant.enabled: true`) with offset port-forwards. This eliminates all conflicts.
+
+---
+
 ## Workflow
 
 ### Before Starting Any Task
