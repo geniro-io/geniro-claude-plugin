@@ -1,8 +1,6 @@
 # Geniro Claude Plugin — Development Guidelines
 
-## Scripts (use these, don't do it manually)
-
-Three scripts in `scripts/` automate versioning, building, and releasing:
+## Version Bumping
 
 ### `./scripts/bump-version.sh [patch|minor|major]`
 Bumps version in `marketplace.json` (the single source of truth for versioning).
@@ -14,32 +12,17 @@ Note: `plugin.json` does NOT contain a version field — per Claude docs, relati
 ./scripts/bump-version.sh major   # 1.2.1 → 2.0.0 (breaking changes)
 ```
 
-### `./scripts/build.sh`
-Packages the plugin into a `.zip` file (zip archive) in `dist/` for local upload via Claude Desktop.
+### IMPORTANT: Do NOT build, release, or update the plugin
 
-```bash
-./scripts/build.sh
-# → dist/geniro-claude-marketplace-1.3.0.zip
-```
-
-### `./scripts/release.sh [patch|minor|major] "commit message"`
-Full release pipeline: bumps version → builds .zip → commits → pushes.
-
-```bash
-./scripts/release.sh minor "feat: add Playwright visual verification"
-# Bumps version, builds .zip, commits, pushes to origin/main
-```
+The LLM must **never** run `build.sh`, `release.sh`, `update-plugin.sh`, or any command that builds, packages, releases, or reinstalls the plugin locally. Only the human operator handles plugin release and local installation. The LLM's responsibility ends at bumping the version and committing the code changes.
 
 ## Plugin Structure
 
 ```
 geniro-claude-marketplace/
 ├── .claude-plugin/marketplace.json    # Marketplace catalog (root)
-├── scripts/                           # Build & release scripts
-│   ├── build.sh                       # Package .zip file
-│   ├── bump-version.sh                # Bump version in marketplace.json
-│   └── release.sh                     # Full release pipeline
-├── dist/                              # Build output (gitignored)
+├── scripts/
+│   └── bump-version.sh                # Bump version in marketplace.json
 └── plugins/geniro-claude-plugin/      # The actual plugin
     ├── .claude-plugin/plugin.json     # Plugin manifest
     ├── CLAUDE.md                      # This file
