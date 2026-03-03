@@ -60,6 +60,28 @@ src/
 - **Use framework features first** — Refine, Ant Design, and React Router already provide solutions for data fetching, forms, tables, modals, routing, auth, notifications, and more. Never build custom implementations when the framework offers a built-in way. Check Ant Design's component library and Refine's hooks before writing custom UI or data logic.
 - **No custom reinventions** — don't create custom dropdowns, modals, tables, date pickers, loaders, or layout wrappers when Ant Design provides them. Don't write custom data fetching when Refine hooks handle it. Don't build custom routing when React Router covers it.
 
+### Component Library — MANDATORY RULES
+
+**CRITICAL: All UI must be built exclusively from the shared component library in `src/components/ui/`.**
+
+1. **Only use components from `src/components/ui/`** — never create custom inline components that replicate existing UI primitives (buttons, badges, cards, inputs, dialogs, dropdowns, etc.).
+
+2. **No custom styled divs/spans when a component exists** — if `Badge`, `Card`, `Button`, etc. cover the use case, use them. Do not substitute with raw `<div>` or `<span>` elements styled to look like components.
+
+3. **Storybook is the source of truth** — the component library is documented at `src/pages/storybook/page.tsx`. Every component in `src/components/ui/` has a storybook section defining the canonical look and behavior. Before using or creating a component, check the storybook first.
+
+4. **Update the component first, then use it** — if a page needs a variant or behavior the shared component doesn't support yet:
+   - First update the component in `src/components/ui/`
+   - Then update its storybook section in `src/pages/storybook/page.tsx` to document the change
+   - Then use it in the page
+
+5. **Never diverge from storybook visuals** — if a page's component looks different from its storybook counterpart, the page is wrong. Fix the page to match storybook.
+
+6. **Before completing any UI task**, verify:
+   - No local component definitions that duplicate `src/components/ui/` functionality
+   - All cards, badges, buttons, inputs, etc. are imported from `@/components/ui/`
+   - Any visual changes were made in `src/components/ui/` first and reflected in storybook
+
 ### Two-Layer Architecture
 
 **Boundary layer (defensive zone)** — API adapters, form handlers, event parsers, WebSocket message handlers:

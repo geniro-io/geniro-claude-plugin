@@ -351,11 +351,11 @@ Before moving to Phase 4, confirm that **every** delegated agent has returned an
 
 **→ After ALL implementing agents complete successfully, immediately proceed to Phase 4.**
 
-### Phase 4: Review (Reviewer + Security Auditor + Test Reviewer)
+### Phase 4: Review (Reviewer + Security Auditor + Test Reviewer + Design Reviewer)
 
-After all implementing agents complete, **run three review agents in parallel** to catch problems before they ship.
+After all implementing agents complete, **run review agents in parallel** to catch problems before they ship.
 
-**Delegate all three simultaneously using Task:**
+**Delegate simultaneously using Task (3 always + 1 conditional):**
 
 **1. Code Reviewer** — delegate to `reviewer-agent`:
 ```
@@ -423,21 +423,44 @@ Evaluate test quality for the recent implementation.
 Run the litmus test on every new test. Check assertion quality. Verify all architect test scenarios are covered. Check test pyramid balance.
 ```
 
+**4. Design Reviewer (CONDITIONAL — only when web files changed)** — delegate to `design-reviewer-agent`:
+
+Only run this when the `web-agent` made changes. Skip if the task was API-only or Dist-only.
+
+```
+Review the frontend changes for design system compliance and visual consistency.
+
+## What was implemented
+- [summary of the frontend feature/fix]
+
+## Files changed (Web)
+- [list of changed .tsx files in geniro-web/]
+
+Verify that:
+1. All UI uses shared components from src/components/ui/ — no custom inline duplicates
+2. Visual design matches the storybook reference at src/pages/storybook/page.tsx
+3. If new shared components were added/modified, storybook was updated too
+
+Produce a Design Review Report with verdict: APPROVED or CHANGES REQUIRED.
+```
+
 **Processing combined results:**
 
-After all three agents return, merge their findings:
+After all agents return, merge their findings:
 
 1. **Reviewer's required changes** → always blocking
 2. **Security findings CRITICAL/HIGH** → blocking (must fix before shipping)
 3. **Security findings MEDIUM/LOW** → non-blocking (present as minor improvements)
 4. **Test reviewer ILLUSORY/MISSING** → blocking (tests must actually test something)
 5. **Test reviewer WEAK/STYLE** → non-blocking (present as minor improvements)
+6. **Design reviewer HIGH violations** → blocking (component duplication, missing storybook updates)
+7. **Design reviewer MEDIUM/LOW violations** → non-blocking (present as minor improvements)
 
 Combine all blocking findings into a single list for the implementing agents. Deduplicate overlapping findings (e.g., reviewer and security auditor both flagging the same missing auth).
 
 **Review loop — repeat until fully approved:**
 
-This is a strict loop. **Do NOT proceed to Phase 4b until the reviewer returns ✅ Approved AND no blocking security/test issues remain.**
+This is a strict loop. **Do NOT proceed to Phase 4b until the reviewer returns ✅ Approved AND no blocking security/test/design issues remain.**
 
 1. **Reviewer returns ❌ "Changes required":**
    - Read every required change carefully.
@@ -497,11 +520,11 @@ This is a strict loop. **Do NOT proceed to Phase 4b until the reviewer returns �
 3. **Reviewer returns ✅ "Approved" (no changes):**
    - Proceed to Phase 5.
 
-**Re-running specialized reviewers:** After fixes, always re-run the `reviewer-agent`. Only re-run `security-auditor-agent` if fixes involved security-related changes (auth, input validation, queries). Only re-run `test-reviewer-agent` if fixes involved test changes. This avoids unnecessary re-runs while ensuring relevant issues are verified.
+**Re-running specialized reviewers:** After fixes, always re-run the `reviewer-agent`. Only re-run `security-auditor-agent` if fixes involved security-related changes (auth, input validation, queries). Only re-run `test-reviewer-agent` if fixes involved test changes. Only re-run `design-reviewer-agent` if fixes involved UI component changes or new shared components. This avoids unnecessary re-runs while ensuring relevant issues are verified.
 
 **Safety limit:** If the loop runs more than 3 rounds without full approval, stop and present the situation to the user with the outstanding issues. Let the user decide whether to continue iterating or ship as-is.
 
-**→ After reviewer fully approves AND no blocking security/test issues remain, immediately proceed to Phase 4b.**
+**→ After reviewer fully approves AND no blocking security/test/design issues remain, immediately proceed to Phase 4b.**
 
 ### Phase 4b: Integration Test Gate
 

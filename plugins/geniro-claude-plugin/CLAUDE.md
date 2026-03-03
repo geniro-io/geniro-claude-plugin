@@ -32,6 +32,7 @@ geniro-claude-marketplace/
     │   ├── web-agent.md               # Frontend implementation
     │   ├── dist-agent.md              # Distribution / Helm chart (geniro-dist/)
     │   ├── reviewer-agent.md          # Code review & quality gate
+    │   ├── design-reviewer-agent.md   # Design system compliance & storybook check
     │   ├── skeptic-agent.md           # Spec validation (mirage detection)
     │   ├── security-auditor-agent.md  # OWASP security review
     │   ├── completeness-validator-agent.md  # Requirements traceability
@@ -67,6 +68,7 @@ geniro-claude-marketplace/
 - **Security Auditor** (opus) — OWASP Top 10 review during Phase 4, runs alongside reviewer.
 - **Completeness Validator** (opus) — requirements traceability check during Phase 1b, runs alongside skeptic.
 - **Test Reviewer** (opus) — test quality evaluation during Phase 4, runs alongside reviewer.
+- **Design Reviewer** (inherit/opus) — design system compliance check during Phase 4. Verifies all UI uses shared components from `src/components/ui/`, no custom inline duplicates, visual consistency with storybook, and storybook is updated for new/modified components. Only runs when web-agent made changes.
 - **Cleanup Agent** (haiku) — runs at the end of Phase 6, detects and removes leftover screenshots, temp files, and stops lingering servers.
 - **Feature backlog** — feature specs live in `.claude/project-features/` (created on first use). Completed features are archived to `.claude/project-features/completed/`. Create with `/new-feature`, manage with `/features`, implement with `/orchestrate feature: <name>`.
 - **Knowledge base** — accumulated learnings persist across sessions in `.claude/project-knowledge/`:
