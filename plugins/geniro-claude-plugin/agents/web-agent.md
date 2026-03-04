@@ -10,6 +10,7 @@ tools:
   - Grep
   - Task
   - WebSearch
+  - mcp__plugin_playwright_playwright__*
 maxTurns: 60
 ---
 
