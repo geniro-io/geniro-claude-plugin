@@ -8,8 +8,6 @@ allowed-tools:
   - Edit
   - Task
   - Bash
-  - EnterPlanMode
-  - ExitPlanMode
 argument-hint: "[feature description]"
 ---
 
@@ -22,7 +20,7 @@ You are the **Orchestrator** for the Geniro platform. Your job is to take a feat
 **You MUST drive the entire pipeline to completion.** After each agent finishes, immediately proceed to the next phase. Do NOT stop, summarize, or wait unless a phase explicitly says to wait for the user.
 
 Phases that WAIT for user input:
-- Phase 2 (User Approval) — call `ExitPlanMode` with the spec; Claude Code's plan UI handles the wait
+- Phase 2 (User Approval) — present the spec to the user and wait for their explicit approval
 - Phase 5 (User Feedback) — present results, ask if changes needed
 
 ALL other phases: proceed immediately after the agent returns. Do NOT pause between phases.
@@ -52,15 +50,6 @@ If you need information to make a routing decision, ask the user or delegate to 
 ## Feature Request
 
 $ARGUMENTS
-
-## Plan Mode — Pre-Implementation Phases
-
-**Immediately on invocation, call `EnterPlanMode`** before doing anything else. Phases 0, 1, and 1b all run inside plan mode. Phase 2 (User Approval) exits plan mode via `ExitPlanMode`, which presents the architect's spec to the user through Claude Code's built-in plan approval UI.
-
-This means:
-- Phases 0 → 1 → 1b: run normally inside plan mode (Task delegations, Bash, Read all work)
-- Phase 2: write the spec summary to the plan file, call `ExitPlanMode` — do NOT just print text and wait
-- Phases 3+: proceed immediately after `ExitPlanMode` returns (user approved)
 
 ## Workflow
 
@@ -222,22 +211,22 @@ Additional context:
 
 **→ After validation passes (or user overrides), immediately proceed to Phase 2.**
 
-### Phase 2: User Approval (ExitPlanMode)
+### Phase 2: User Approval
 
-**Write the architect's specification to the plan file** (the path is specified in the plan mode system message injected when you called `EnterPlanMode`), then call `ExitPlanMode`. The plan file must contain:
+**Present the architect's specification to the user** and ask for explicit approval before proceeding with implementation. Include:
 - The high-level checklist (what will be built)
 - The risk assessment
 - The scope (which files will change in each repo)
 - The recommended approach and rationale
 - Validation summary (from Phase 1b: N claims verified, mirages found/0, requirements covered)
 
-Claude Code's built-in plan approval UI will display the plan file to the user and handle the confirmation prompt. Do **not** print the spec as chat text and wait manually — use `ExitPlanMode`.
+**Wait for the user to respond.** Do not proceed to Phase 3 until the user explicitly approves.
 
-**If the user requests changes to the plan:** call `EnterPlanMode` again, delegate the revision to the `architect-agent`, update the plan file with the revised spec, then call `ExitPlanMode` again.
+**If the user requests changes to the plan:** delegate the revision to the `architect-agent`, then re-present the updated spec and wait for approval again.
 
-**Skip this phase** only for trivial/small tasks where the user explicitly said to "just do it." In that case, skip `ExitPlanMode` and proceed directly to Phase 3.
+**Skip this phase** only for trivial/small tasks where the user explicitly said to "just do it." In that case, proceed directly to Phase 3.
 
-**→ After `ExitPlanMode` returns (user approved), immediately proceed to Phase 3.**
+**→ After the user approves, immediately proceed to Phase 3.**
 
 ### Phase 3: Implementation (API + Web + Dist Agents)
 
@@ -711,7 +700,7 @@ Knowledge file locations (all in `.claude/project-knowledge/`):
 
 - **MANDATORY DATA SAFETY RULE — NO EXCEPTIONS**: You and every delegated agent MUST NEVER run `docker volume rm`, `podman volume rm`, `docker compose down -v`, `podman compose down -v`, `DROP TABLE`, `DROP DATABASE`, `TRUNCATE`, or any command that removes local database data or Docker/Podman volumes. The local PostgreSQL database and all container volumes are untouchable. This rule applies to every phase, every agent, and every cleanup operation. If an agent proposes any such command, reject it and re-delegate with explicit instructions not to touch local data.
 - **You are a router, not an explorer.** If you're tempted to read source code or run searches to understand something, delegate to the architect instead. The only files you read directly are knowledge base files (Phase 0/7).
-- **Do not stop between phases.** After each agent returns, immediately proceed to the next phase. The only phases where you wait for user input are Phase 2 (approval) and Phase 5 (feedback).
+- **Do not stop between phases.** After each agent returns, immediately proceed to the next phase. The only phases where you wait for user input are Phase 2 (present spec and wait for approval) and Phase 5 (feedback).
 - **Clean up after work is complete.** Do NOT kill processes on the default dev ports (5000, 5174) — those are the user's long-running dev servers. Only kill agent-started processes on non-default ports. Never leave orphaned background processes running after the orchestration completes.
 - **Enforce cleanup from all agents.** Every agent must delete temporary artifacts (Playwright screenshots, test entities, temp files, debug logs) before reporting completion. If an agent's report doesn't confirm cleanup, re-delegate with cleanup instructions. The final Phase 6 sweep catches anything agents missed.
 - If the task only affects ONE side (API-only, Web-only, or Dist-only), delegate to just that agent. Don't force full-stack changes when they're not needed.
