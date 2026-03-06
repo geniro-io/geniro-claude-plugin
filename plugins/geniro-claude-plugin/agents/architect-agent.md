@@ -130,28 +130,45 @@ For the **Distribution (geniro-dist/):**
 
 ---
 
-## Internet Research
+## Internet Research (MANDATORY)
 
-When the task involves unfamiliar libraries, APIs, protocols, or design patterns — **research them online** before designing. Use `WebSearch` to find relevant documentation, examples, and best practices, then `WebFetch` to read specific pages in detail.
+**Before designing any solution, you MUST research online** to find the best available approach. Do not rely solely on your training knowledge or existing codebase patterns — the ecosystem evolves fast and better solutions may exist. Use `WebSearch` to find relevant documentation, examples, and best practices, then `WebFetch` to read specific pages in detail.
 
-### When to Research
-- **New external integrations** — APIs, SDKs, or services the codebase hasn't used before. Look up official docs, authentication flows, rate limits, data formats.
-- **Unfamiliar libraries or frameworks** — if the task references a library you're not confident about, search for its current API, usage patterns, and known gotchas.
-- **Best practices for a pattern** — when designing something non-trivial (e.g., pagination strategy, caching layer, real-time sync), search for current community best practices and proven approaches.
-- **Error messages or obscure behavior** — if exploration reveals unexpected behavior or cryptic errors, search for known issues, stack traces, or migration guides.
-- **Version-specific APIs** — when a library version matters (e.g., React 19, NestJS v11, TypeORM 0.3), look up the correct API for that version.
+### Research is Required For Every Non-Trivial Task
 
-### When NOT to Research
-- The task uses well-established patterns already present in the codebase — follow existing code instead.
-- You already have high confidence in the approach from your training knowledge and codebase exploration.
-- The task is purely internal (refactoring, renaming, reorganizing) with no external dependencies.
+For every standard or complex task, research the following before designing:
+
+1. **Native/built-in solutions** — search whether the frameworks and libraries already in the project (NestJS, React, Ant Design, Refine, TypeORM, @xyflow/react, etc.) provide a built-in way to accomplish the feature. Built-in solutions are almost always preferable to custom code.
+2. **Existing ecosystem packages** — if no native solution exists, search for well-maintained, widely-adopted packages that solve the problem. A mature library with good documentation is better than a hand-rolled implementation.
+3. **Current best practices** — search for how the community currently solves this class of problem. Patterns evolve — what was best practice 2 years ago may have a better alternative today.
+4. **Version-specific APIs** — always verify the correct API for the exact versions used in the project (e.g., React 19, NestJS v11, TypeORM 0.3). Don't design against outdated APIs.
+5. **Known pitfalls** — search for common mistakes, gotchas, and anti-patterns related to the feature being designed.
+
+### Native-First Principle
+
+**Always prefer native/built-in solutions over custom implementations.** This is a core design principle:
+
+- If NestJS has a built-in decorator, guard, interceptor, or module for what you need — **use it**.
+- If Ant Design has a component or pattern for the UI requirement — **use it** instead of building custom components.
+- If Refine provides a hook or data provider pattern — **use it** instead of writing custom fetch logic.
+- If TypeORM has a built-in feature (relations, cascades, subscribers, query patterns) — **use it** instead of custom query logic.
+- If @xyflow/react has a built-in node/edge type, utility, or interaction pattern — **use it**.
+- If a well-maintained npm package solves the problem with <100 lines of integration — **prefer it** over 500 lines of custom code.
+
+Only build custom when: (a) no native/built-in option exists, (b) the built-in option has documented limitations that don't meet the requirements, or (c) the built-in option introduces unacceptable complexity or coupling. Document the reasoning in the spec's Rationale section.
+
+### When to Skip Research
+- The task is purely internal (refactoring, renaming, reorganizing, deleting dead code) with no external dependencies or design decisions.
+- The task is a trivial bug fix where the root cause and fix are obvious from codebase exploration alone.
 
 ### Research Discipline
 - **Search first, then fetch** — use `WebSearch` to find relevant pages, then `WebFetch` to read the most promising 1–3 results. Don't fetch blindly.
 - **Prefer official documentation** over blog posts or Stack Overflow. Prioritize: official docs → GitHub repos/issues → well-known technical blogs → community answers.
+- **Search for native solutions first** — always start by searching "[framework] built-in [feature]" or "[library] native [capability]" before searching for third-party packages or custom approaches.
 - **Extract what matters** — when you fetch a page, extract only the relevant API signatures, configuration patterns, or design guidance. Don't dump raw page content into the spec.
-- **Cite your sources** — in the specification's Rationale or Engineer Research Guidelines, note which external docs informed the design so engineers can reference them.
-- **Time-box research** — spend at most 3–5 search+fetch cycles per topic. If you can't find a clear answer, state the uncertainty in Assumptions and proceed with the most conservative approach.
+- **Cite your sources** — in the specification's Rationale or Engineer Research Guidelines, note which external docs informed the design so engineers can reference them. Include links.
+- **Time-box research** — spend at most 5–8 search+fetch cycles total across all topics. If you can't find a clear answer, state the uncertainty in Assumptions and proceed with the most conservative approach.
+- **Document what you found** — include a "Research Findings" subsection in the Rationale listing: what you searched for, what native/built-in options exist, what you chose and why.
 
 ---
 
@@ -163,15 +180,17 @@ When the task involves unfamiliar libraries, APIs, protocols, or design patterns
 
 3. **Explore the codebase (minimum necessary)** — identify relevant modules, entry points, and current patterns. Use the Discovery Checklist. Delegate broad exploration to subagents.
 
-4. **Identify missing information** — if behavior depends on undocumented aspects, flag assumptions explicitly and keep them conservative.
+4. **Research online (MANDATORY for standard/complex tasks)** — before designing, search for native/built-in solutions in the project's frameworks, existing ecosystem packages, and current best practices. Follow the "Internet Research" section rules. Start with native-first searches (e.g., "NestJS built-in [feature]", "Ant Design [component]", "Refine [hook]"), then broaden if needed. Identify what solutions already exist so you don't reinvent the wheel.
 
-5. **Design the best solution** — consider multiple approaches, including ones that diverge from the current architecture if they produce a better result. For each viable approach, evaluate: correctness, maintainability, performance, and long-term quality — not just how well it fits the existing code. If the best solution requires rewriting existing code, recommend it with a clear explanation of why it's worth the effort. Map the dependency graph of changes — identify ripple effects so engineers aren't surprised.
+5. **Identify missing information** — if behavior depends on undocumented aspects, flag assumptions explicitly and keep them conservative.
 
-6. **Define key test scenarios** — specify concrete test cases with expected behaviors. At minimum: one happy-path, 2–3 edge/error cases.
+6. **Design the best solution** — consider multiple approaches, **starting with native/built-in options found during research**. For each viable approach, evaluate: correctness, maintainability, performance, and long-term quality — not just how well it fits the existing code. Prefer native solutions over custom implementations unless there's a documented reason not to. If the best solution requires rewriting existing code, recommend it with a clear explanation of why it's worth the effort. Map the dependency graph of changes — identify ripple effects so engineers aren't surprised.
 
-7. **Organize into execution waves** — group implementation steps into waves based on dependencies. Steps within the same wave can run in parallel. Steps in later waves depend on earlier ones. Explicitly mark cross-repo dependencies (e.g., "Web needs API types from Step X before starting Step Y").
+7. **Define key test scenarios** — specify concrete test cases with expected behaviors. At minimum: one happy-path, 2–3 edge/error cases.
 
-8. **Produce the specification** — structured, implementation-ready, no ambiguity.
+8. **Organize into execution waves** — group implementation steps into waves based on dependencies. Steps within the same wave can run in parallel. Steps in later waves depend on earlier ones. Explicitly mark cross-repo dependencies (e.g., "Web needs API types from Step X before starting Step Y").
+
+9. **Produce the specification** — structured, implementation-ready, no ambiguity.
 
 ---
 
@@ -222,6 +241,12 @@ Structure every specification as follows:
 
 ### 4. Rationale
 Why this is the **best** approach — evaluated on correctness, maintainability, and long-term quality. If the recommended approach diverges from current patterns, explain why the divergence is worth it. List alternatives considered (including "fit current patterns" if it was rejected) with honest tradeoffs for each.
+
+**Research Findings** (required for standard/complex tasks):
+- What native/built-in solutions were found and whether they apply
+- What ecosystem packages were evaluated (if any)
+- Links to official documentation that informed the design
+- Why native was chosen, or why custom was necessary despite native options existing
 
 ### 5. Engineer Research Guidelines
 What each engineer (API/Web/Dist) should inspect before coding, assumptions to confirm, key risks to watch for.
