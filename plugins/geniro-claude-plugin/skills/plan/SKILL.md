@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "Analyze a task and produce an implementation-ready specification before coding begins. Explores both geniro/ and geniro-web/ codebases, designs minimal changes that fit existing patterns, and outputs a step-by-step plan with file paths, verification steps, and test scenarios. Use before implementing any non-trivial feature or fix."
+description: "Analyze a task and produce an implementation-ready specification before coding begins. Explores both geniro/ and geniro-web/ codebases, evaluates multiple approaches prioritizing quality over compatibility, and outputs a step-by-step plan with file paths, verification steps, and test scenarios. Use before implementing any non-trivial feature or fix."
 context: fork
 agent: architect-agent
 allowed-tools:
@@ -29,7 +29,7 @@ The Geniro platform consists of two repositories:
 ## Your Task
 
 1. **Explore both codebases** — read project docs, find related code, understand existing patterns.
-2. **Design the change** — choose the approach that fits current architecture with minimal, clean modifications.
+2. **Design the best solution** — consider multiple approaches, including ones that require significant changes. Prioritize quality over compatibility with current patterns. If rewriting is the better path, recommend it.
 3. **Produce a full specification** with:
    - Risk assessment (scope, breaking changes, confidence, rollback)
    - File-level scope (direct changes + ripple effects)
